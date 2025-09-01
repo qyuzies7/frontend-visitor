@@ -1,72 +1,48 @@
+/* index.css */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
   }
-  a:hover {
-    color: #747bff;
+  .no-scrollbar {
+    -ms-overflow-style: none; /* IE, Edge */
+    scrollbar-width: none; /* Firefox */
   }
-  button {
-    background-color: #f9f9f9;
+
+  /* Gaya untuk gambar kereta */
+  .kereta-background {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 550px; /* Dipertahankan besar */
+    background-image: url('/train-bg.png'); /* Nama file gambar */
+    background-size: auto 100%; /* Tinggi penuh, lebar menyesuaikan */
+    background-repeat: no-repeat;
+    background-position: 10% 40px; /* Geser lebih ke bawah (dari 20px ke 40px) */
+    opacity: 0.3; /* Transparan */
+    z-index: 0; /* Pastikan di belakang konten */
+  }
+
+  /* Penyesuaian untuk layar kecil */
+  @media (max-width: 768px) {
+    .kereta-background {
+      height: 350px; /* Dipertahankan besar */
+      background-size: auto 90%; /* Sedikit lebih kecil untuk ponsel */
+      background-position: 10% 30px; /* Geser lebih ke bawah (dari 15px ke 30px) */
+    }
+  }
+
+  @media (max-width: 480px) {
+    .kereta-background {
+      height: 250px; /* Dipertahankan besar */
+      background-size: auto 85%; /* Menyesuaikan untuk layar sangat kecil */
+      background-position: 10% 20px; /* Geser lebih ke bawah (dari 10px ke 20px) */
+    }
   }
 }
