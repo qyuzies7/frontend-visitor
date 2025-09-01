@@ -1,0 +1,111 @@
+/* popup-overlay: Digunakan untuk membuat latar belakang gelap semi-transparan yang menutupi seluruh layar. */
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+/* popup-modal-success: Kontainer utama untuk konten pop-up sukses. */
+.popup-modal-success {
+  background-color: white;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 450px;
+  padding: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  font-family: Arial, sans-serif;
+  text-align: center;
+  position: relative;
+}
+
+/* popup-header-success: Bagian atas pop-up yang berisi ikon centang dan tombol tutup. */
+.popup-header-success {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+/* success-icon: Lingkaran hijau untuk ikon centang. */
+.success-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background-color: #DCFCE7; /* Hijau muda */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+/* Mengatur ukuran gambar di dalam lingkaran. */
+.success-icon img {
+  width: 40px;
+  height: auto;
+}
+
+/* close-button: Tombol 'x' untuk menutup pop-up. */
+.close-button {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #888;
+}
+
+/* popup-body: Bagian utama pop-up dengan teks. */
+.popup-body h2 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.popup-body p {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 20px;
+}
+
+/* success-box: Kotak informasi berwarna hijau. */
+.success-box {
+  background-color: #f1f8f3;
+  border-left: 5px solid #16A34A;
+  padding: 15px;
+  border-radius: 5px;
+  text-align: left;
+  margin-bottom: 20px;
+}
+
+.success-box h4 {
+  color: #16A34A;
+  margin-top: 0;
+  margin-bottom: 5px;
+}
+
+.success-box p {
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: #333;
+}
+
+/* btn-success: Tombol 'Tutup' berwarna hijau. */
+.btn-success {
+  background-color: #16A34A;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+}

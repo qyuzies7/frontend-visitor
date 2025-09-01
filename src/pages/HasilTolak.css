@@ -1,0 +1,261 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+/* Main Body & Page Wrapper */
+body, html {
+  margin: 0;
+  padding: 0;
+  font-family: 'Poppins', sans-serif;
+  background-color: #EBF1F8; 
+  min-height: 100vh;
+  overflow: auto;
+}
+
+.page-wrapper-tolak {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+/* Card Container */
+.main-card-container-tolak {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  padding: 30px;
+  width: 100%;
+  max-width: 1400px;
+  border-top: 5px solid #E54005; 
+  margin: auto;
+}
+
+/* Status Header Section */
+.status-header-tolak {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  border-bottom: 1px solid #E5E7EB;
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+}
+
+.cross-icon-tolak {
+  width: 80px;
+  height: 80px;
+}
+
+.status-text-tolak h3 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #E54005;
+  margin: 0;
+}
+
+.status-text-tolak p {
+  font-size: 16px;
+  color: #5A5A5A;
+  margin: 5px 0 0;
+}
+
+.last-updated-tolak {
+  font-size: 12px;
+  color: #999;
+  margin-top: 5px;
+}
+
+/* Info Grid Section */
+.info-grid-tolak {
+  display: flex; /* Use flexbox */
+  gap: 20px;
+  margin-bottom: 30px;
+  align-items: stretch; /* Makes all items the same height */
+  flex-wrap: wrap; /* Allows items to wrap on smaller screens */
+}
+
+.info-item-tolak {
+  display: flex;
+  flex-direction: column;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  flex: 1; /* Allows the item to grow and shrink */
+}
+
+.info-label-tolak {
+  font-size: 12px;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+}
+
+.info-value-tolak {
+  font-size: 14px;
+  font-weight: 500;
+  color: #222;
+}
+
+/* Detail Section */
+.detail-section-tolak {
+  margin-bottom: 30px;
+}
+
+.detail-header-tolak {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.user-icon-tolak {
+  width: 20px;
+  height: 20px;
+  color: #555;
+}
+
+.detail-header-tolak h4 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.divider-tolak {
+  border: none;
+  border-top: 1px solid #E5E7EB;
+  margin-top: 0;
+  margin-bottom: 20px;
+}
+
+.date-status-grid-tolak {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.date-item-tolak, .status-item-tolak {
+  display: flex;
+  flex-direction: column;
+  background-color: #F8F9FA;
+  padding: 16px;
+  border-radius: 8px;
+}
+
+.date-label-tolak, .status-label-tolak {
+  font-size: 12px;
+  font-weight: 600;
+  color: #9CA3AF;
+  margin-bottom: 4px;
+}
+
+.date-value-tolak {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1F2937;
+}
+
+.status-value-tolak {
+  font-size: 14px;
+  font-weight: 600;
+  color: #E54005;
+}
+
+/* Rejection Note Section */
+.rejection-note-box-tolak {
+  background-color: #FFF6F3;
+  border: 1px solid #E54005;
+  border-radius: 8px;
+  padding: 24px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.note-cross-icon-tolak {
+  width: 24px;
+  height: 24px;
+  color: #E54005;
+  font-size: 24px;
+  min-width: 24px;
+  margin-top: 2px;
+}
+
+.note-content-tolak h5 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #E54005;
+  margin: 0;
+}
+
+.note-content-tolak p {
+  font-size: 14px;
+  color: #6B7280;
+  margin: 5px 0 0;
+  line-height: 1.5;
+}
+
+/* Buttons Section */
+.button-group-tolak {
+  display: flex;
+  gap: 16px;
+  justify-content: flex-end;
+  margin-top: 40px;
+}
+
+.re-apply-button-tolak,
+.contact-button-tolak {
+  border-radius: 8px;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.re-apply-button-tolak {
+  background-color: #fff;
+  border: 1px solid #3B82F6;
+  color: #3B82F6;
+}
+
+.re-apply-button-tolak:hover {
+  background-color: #F3F4F6;
+  color: #1F2937;
+}
+
+.contact-button-tolak {
+  background-color: #E54005;
+  border: 1px solid #E54005;
+  color: #fff;
+}
+
+.contact-button-tolak:hover {
+  background-color: #C83804;
+  border-color: #C83804;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .info-grid-tolak {
+    flex-direction: column; /* Stacks items vertically on small screens */
+  }
+  .date-status-grid-tolak {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .button-group-tolak {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .re-apply-button-tolak,
+  .contact-button-tolak {
+    width: 100%;
+    justify-content: center;
+  }
+}
