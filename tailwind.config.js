@@ -7,13 +7,16 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Poppins', 'sans-serif'], // Atur Poppins sebagai font default untuk font-sans
+        sans: ['Poppins', 'sans-serif'],
+        montserrat: ['Montserrat', 'sans-serif'],
       },
       colors: {
         customBlue: {
           DEFAULT: '#1E3A8A',
           hover: '#162c66',
         },
+        kaiorange: '#ED6B23',
+        kaiblue: '#408BA6',
       },
     },
   },
