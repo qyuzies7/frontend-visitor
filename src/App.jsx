@@ -7,7 +7,13 @@ import HasilCek from "./pages/HasilCek";
 import HasilTolak from './pages/HasilTolak';
 import HasilProses from "./pages/HasilProses";
 
-import { AdminLogin, Dashboard } from "./admin";
+import { 
+  AdminLogin, 
+  Dashboard, 
+  VerifikasiPersetujuan, 
+  KartuVisitor, 
+  RiwayatPengembalian 
+} from "./admin";
 
 function App() {
   return (
@@ -21,7 +27,9 @@ function App() {
         <Route path="/status/processing" element={<HasilProses />} />
         <Route path="/admin" element={<AdminLogin />} />
         <Route path="/admin/dashboard" element={<Dashboard />} />
-        
+        <Route path="/admin/verifikasi" element={<VerifikasiPersetujuan />} />
+        <Route path="/admin/kartu-visitor" element={<KartuVisitor />} />
+        <Route path="/admin/riwayat" element={<RiwayatPengembalian />} />
       </Routes>
     </Router>
   );

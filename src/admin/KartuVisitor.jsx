@@ -3,49 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import kaiLogo from "../assets/KAI-logo.png";
 
-const dummyStats = {
-  aktif: 20,
-  verifikasi: 5,
-  masukHariIni: 10,
-  keluarHariIni: 5,
-  rusak: 5,
-  hilang: 2,
-};
-
-const cardConfig = [
-  {
-    title: "Total Aktif",
-    valueKey: "aktif",
-    icon: "streamline-plump:user-pin-remix",
-  },
-  {
-    title: "Menunggu Verifikasi",
-    valueKey: "verifikasi",
-    icon: "streamline-sharp:time-lapse-solid",
-  },
-  {
-    title: "Total Kartu Masuk Hari Ini",
-    valueKey: "masukHariIni",
-    icon: "solar:card-recive-outline",
-  },
-  {
-    title: "Total Kartu Keluar Hari Ini",
-    valueKey: "keluarHariIni",
-    icon: "solar:card-send-outline",
-  },
-  {
-    title: "Total Kartu Rusak",
-    valueKey: "rusak",
-    icon: "mdi:credit-card-remove-outline",
-  },
-  {
-    title: "Kartu Hilang",
-    valueKey: "hilang",
-    icon: "solar:card-search-broken",
-  },
-];
-
-export default function Dashboard() {
+export default function KartuVisitor() {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef();
   const navigate = useNavigate();
@@ -75,19 +33,15 @@ export default function Dashboard() {
     },
   ];
 
-  // Handle menu navigation
   const handleMenuClick = (path) => {
     navigate(path);
   };
 
-  // Handle logout
   const handleLogout = () => {
-    // Clear any authentication data here if needed
     navigate("/admin");
     setShowDropdown(false);
   };
 
-  // Handle click outside dropdown
   React.useEffect(() => {
     function handleClickOutside(event) {
       if (
@@ -152,15 +106,14 @@ export default function Dashboard() {
         className="flex-1 flex flex-col px-2 md:px-12 py-10 transition-all"
         style={{ marginLeft: 360, minHeight: "100vh", width: "100%" }}
       >
-        {/* Dashboard & Profile Card */}
+        {/* Header */}
         <div className="flex gap-8 mb-10 flex-wrap">
-          {/* Card Dashboard & Admin */}
           <div
             className="w-full max-w-[900px] flex items-center bg-white rounded-[20px] shadow-md px-8 py-4 relative mx-auto"
             style={{ minHeight: 70 }}
           >
             <span className="font-poppins font-semibold text-[24px] text-[#474646]">
-              Dashboard
+              Kartu Visitor
             </span>
             {/* Profile section */}
             <div
@@ -168,7 +121,6 @@ export default function Dashboard() {
               style={{ minWidth: 200 }}
               ref={dropdownRef}
             >
-              {/* Transparent box behind profile */}
               <div
                 className="absolute top-0 left-0 w-full h-full"
                 style={{
@@ -177,7 +129,6 @@ export default function Dashboard() {
                   zIndex: 0,
                 }}
               ></div>
-              {/* Profile and name */}
               <button
                 className="relative flex items-center gap-2 px-5 py-2 cursor-pointer z-10 hover:opacity-80 transition-opacity"
                 style={{
@@ -193,7 +144,6 @@ export default function Dashboard() {
                   {adminName}
                 </span>
               </button>
-              {/* Dropdown logout */}
               {showDropdown && (
                 <div className="absolute top-[62px] right-0 bg-white rounded-[12px] shadow-lg px-6 py-3 z-20 border min-w-[146px] flex items-center gap-3">
                   <Icon icon="ic:round-logout" width={34} color="#d61d1d" />
@@ -209,67 +159,23 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Cards Section */}
-        <div
-          className="grid gap-x-8 gap-y-7 w-full"
-          style={{
-            gridTemplateColumns: "repeat(2, minmax(280px, 1fr))",
-            maxWidth: 900,
-            margin: "0 auto",
-          }}
-        >
-          {cardConfig.map((card, idx) => (
-            <div
-              key={card.title}
-              className="bg-white rounded-[20px] px-5 py-5 flex flex-col justify-between shadow relative hover:shadow-lg transition-shadow cursor-pointer"
-              style={{
-                width: "100%",
-                maxWidth: 440,
-                height: 155,
-                boxShadow: "0 2px 8px rgba(90,90,140,0.07)",
-                display: "flex",
-              }}
-              onClick={() => {
-                // Navigate to relevant page based on card type
-                if (card.valueKey === 'verifikasi') {
-                  navigate('/admin/verifikasi');
-                } else if (card.valueKey === 'aktif' || card.valueKey === 'masukHariIni' || card.valueKey === 'keluarHariIni') {
-                  navigate('/admin/kartu-visitor');
-                } else if (card.valueKey === 'rusak' || card.valueKey === 'hilang') {
-                  navigate('/admin/riwayat');
-                }
-              }}
-            >
-              <div className="flex items-center justify-between">
-                <span className="font-poppins font-semibold text-[18px] text-[#474646]">
-                  {card.title}
-                </span>
-                <span
-                  className="w-[52px] h-[52px] rounded-[15px] flex items-center justify-center
-                    bg-gradient-to-r from-[#6A8BB0] to-[#5E5BAD]"
-                >
-                  <Icon icon={card.icon} width={28} height={28} color="#fff" />
-                </span>
-              </div>
-              <div className="mt-3 font-poppins font-bold text-[28px] text-[#474646]">
-                {dummyStats[card.valueKey]}
-              </div>
-            </div>
-          ))}
+        {/* Content Area */}
+        <div className="w-full max-w-[900px] mx-auto">
+          <div className="bg-white rounded-[20px] shadow-md p-8 text-center">
+            <Icon icon="solar:card-recive-outline" width={80} height={80} className="mx-auto mb-4 text-[#6A8BB0]" />
+            <h3 className="font-poppins font-semibold text-[24px] text-[#474646]">
+              Halaman Kartu Visitor
+            </h3>
+            <p className="font-poppins text-[16px] text-gray-600">
+              Konten halaman akan ditambahkan di sini
+            </p>
+          </div>
         </div>
       </main>
 
-      {/* Font import dan custom CSS */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
         .font-poppins { font-family: 'Poppins', sans-serif; }
-        main::-webkit-scrollbar { width: 8px; background: #e6e6e6; }
-        main::-webkit-scrollbar-thumb { background: #b8c4e2; border-radius: 6px; }
-        @media (max-width: 900px) {
-          aside { width: 100vw !important; position: static !important; }
-          main { margin-left: 0 !important; }
-          .grid { grid-template-columns: 1fr !important; }
-        }
       `}</style>
     </div>
   );
