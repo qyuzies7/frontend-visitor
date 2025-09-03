@@ -3,12 +3,81 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import kaiLogo from "../assets/KAI-logo.png";
 
+// Dummy data untuk percobaan
+const dummyPengajuan = [
+  {
+    nama: "Azida Kautsar",
+    jenis: "Magang",
+    tanggal: "08 Agustus 2025",
+    dokumen: "dummy.pdf",
+    status: "Menunggu",
+  },
+  {
+    nama: "Milano Sitanggang",
+    jenis: "Vendor",
+    tanggal: "09 Agustus 2025",
+    dokumen: "dummy.png",
+    status: "Menunggu",
+  },
+  {
+    nama: "Maula Azkadina",
+    jenis: "Magang",
+    tanggal: "09 Agustus 2025",
+    dokumen: "dummy.jpg",
+    status: "Diterima",
+  },
+  {
+    nama: "Yudhita Meika",
+    jenis: "Inspeksi",
+    tanggal: "10 Agustus 2025",
+    dokumen: "dummy.docx",
+    status: "Diterima",
+  },
+  {
+    nama: "Ahmad Arfan",
+    jenis: "Vendor",
+    tanggal: "11 Agustus 2025",
+    dokumen: "dummy.pdf",
+    status: "Diterima",
+  },
+  {
+    nama: "Gading Subagio",
+    jenis: "Inspeksi",
+    tanggal: "11 Agustus 2025",
+    dokumen: "dummy.png",
+    status: "Ditolak",
+  },
+];
+
+const statusConfig = {
+  Menunggu: {
+    bg: "#FEF5E7",
+    color: "#D69E2E",
+    label: "Menunggu",
+  },
+  Diterima: {
+    bg: "#E7FEED",
+    color: "#47D62E",
+    label: "Diterima",
+  },
+  Ditolak: {
+    bg: "#FFDEDB",
+    color: "#FF0000",
+    label: "Ditolak",
+  },
+};
+
 export default function VerifikasiPersetujuan() {
   const [showDropdown, setShowDropdown] = useState(false);
+  const [query, setQuery] = useState("");
   const dropdownRef = useRef();
   const navigate = useNavigate();
   const location = useLocation();
   const adminName = "Admin rafi";
+
+  const filteredData = dummyPengajuan.filter((item) =>
+    item.nama.toLowerCase().includes(query.toLowerCase())
+  );
 
   const menuItems = [
     {
@@ -55,8 +124,13 @@ export default function VerifikasiPersetujuan() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Untuk simulasi membuka file dummy
+  const handleLihatDokumen = (file) => {
+    alert(`File: ${file} terbuka (dummy)`);
+  };
+
   return (
-    <div className="min-h-screen flex bg-[#6A8BB0] font-poppins">
+    <div className="min-h-screen flex bg-[#6A8BB0] font-poppins overflow-x-hidden">
       {/* Sidebar */}
       <aside
         className="bg-[#E6E6E6] flex flex-col py-8 px-7 border-r border-[#eaeaea] h-screen fixed top-0 left-0 z-20"
@@ -106,16 +180,15 @@ export default function VerifikasiPersetujuan() {
         className="flex-1 flex flex-col px-2 md:px-12 py-10 transition-all"
         style={{ marginLeft: 360, minHeight: "100vh", width: "100%" }}
       >
-        {/* Header */}
+        {/* Top Card */}
         <div className="flex gap-8 mb-10 flex-wrap">
           <div
             className="w-full max-w-[900px] flex items-center bg-white rounded-[20px] shadow-md px-8 py-4 relative mx-auto"
-            style={{ minHeight: 70 }}
+            style={{ minHeight: 70, width: "100%", maxWidth: 900 }}
           >
             <span className="font-poppins font-semibold text-[24px] text-[#474646]">
               Verifikasi & Persetujuan
             </span>
-            {/* Profile section */}
             <div
               className="relative ml-auto"
               style={{ minWidth: 200 }}
@@ -159,23 +232,112 @@ export default function VerifikasiPersetujuan() {
           </div>
         </div>
 
-        {/* Content Area */}
-        <div className="w-full max-w-[900px] mx-auto">
-          <div className="bg-white rounded-[20px] shadow-md p-8 text-center">
-            <Icon icon="streamline-sharp:time-lapse-solid" width={80} height={80} className="mx-auto mb-4 text-[#6A8BB0]" />
-            <h3 className="font-poppins font-semibold text-[24px] text-[#474646]">
-              Halaman Verifikasi & Persetujuan
-            </h3>
-            <p className="font-poppins text-[16px] text-gray-600">
-              Konten halaman akan ditambahkan di sini
-            </p>
+        {/* Card Table Section */}
+        <div
+          className="mx-auto bg-[#fff] rounded-[20px] shadow-md px-8 py-7"
+          style={{ borderRadius: 20, width: "100%", maxWidth: 900 }}
+        >
+          {/* Search & Menunggu Count */}
+          <div className="flex items-center mb-5">
+            <div className="flex items-center flex-1 bg-white px-4 py-2 rounded-[11px] border border-[#E4E4E4] mr-3" style={{ maxWidth: 360 }}>
+              <Icon icon="ic:round-search" width={28} color="#474646" className="mr-2" />
+              <input
+                type="text"
+                placeholder="cari berdasarkan nama pemohon"
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                className="flex-1 outline-none bg-transparent border-0 text-[17px] font-poppins font-light italic text-[#474646]"
+                style={{ fontStyle: "italic", fontWeight: 300 }}
+              />
+            </div>
+            <div className="font-poppins font-medium text-[#474646] text-[18px] ml-auto">
+              Menunggu : {dummyPengajuan.filter(d => d.status === "Menunggu").length}
+            </div>
+          </div>
+
+          {/* Table */}
+          <div className="overflow-auto">
+            <table className="w-full">
+              <thead>
+                <tr style={{ background: "#F4F4F4" }}>
+                  <th className="py-3 px-2 text-center font-poppins font-semibold text-[#474646] text-[16px]">Nama Pemohon</th>
+                  <th className="py-3 px-2 text-center font-poppins font-semibold text-[#474646] text-[16px]">Jenis Kunjungan</th>
+                  <th className="py-3 px-2 text-center font-poppins font-semibold text-[#474646] text-[16px]">Tanggal Kunjungan</th>
+                  <th className="py-3 px-2 text-center font-poppins font-semibold text-[#474646] text-[16px]">Dokumen</th>
+                  <th className="py-3 px-2 text-center font-poppins font-semibold text-[#474646] text-[16px]">Status</th>
+                  <th className="py-3 px-2 text-center font-poppins font-semibold text-[#474646] text-[16px]">Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredData.map((row, idx) => (
+                  <tr key={idx} className={idx % 2 === 0 ? '' : 'bg-[#F8F8F8]'}>
+                    <td className="py-2 px-2 text-center font-poppins font-semibold text-[15px] text-[#474646]">{row.nama}</td>
+                    <td className="py-2 px-2 text-center font-poppins font-semibold text-[15px] text-[#474646]">{row.jenis}</td>
+                    <td className="py-2 px-2 text-center font-poppins font-semibold text-[15px] text-[#474646]">{row.tanggal}</td>
+                    <td className="py-2 px-2 text-center">
+                      <button
+                        className="px-5 py-1 font-poppins font-semibold text-white text-[15px] rounded-[9px] transition-all"
+                        style={{
+                          background: "linear-gradient(90deg, #6A8BB0 0%, #5E5BAD 100%)",
+                          boxShadow: "0 2px 8px rgba(90,90,140,0.07)",
+                        }}
+                        onClick={() => handleLihatDokumen(row.dokumen)}
+                      >
+                        Lihat
+                      </button>
+                    </td>
+                    <td className="py-2 px-2 text-center">
+                      <div
+                        className="status-btn font-poppins font-semibold text-[15px] px-5 py-1 rounded-[8px]"
+                        style={{
+                          background: statusConfig[row.status].bg,
+                          color: statusConfig[row.status].color,
+                          minWidth: "110px",
+                          display: "inline-flex",
+                          justifyContent: "center",
+                          alignItems: "center",
+                        }}
+                      >
+                        {statusConfig[row.status].label}
+                      </div>
+                    </td>
+                    <td className="py-2 px-2 text-center">
+                      <button
+                        className="px-5 py-1 font-poppins font-semibold text-white text-[15px] rounded-[8px] transition-all"
+                        style={{
+                          background: "#8E8E8E",
+                        }}
+                        onClick={() => navigate("/admin/form-detail")}
+                      >
+                        Detail
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {filteredData.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="text-center py-6 text-[#aaa] font-poppins font-medium">
+                      Tidak ada data ditemukan.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       </main>
 
+      {/* Font import dan custom CSS */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
         .font-poppins { font-family: 'Poppins', sans-serif; }
+        input::placeholder { font-family: 'Poppins', sans-serif; font-weight: 300; font-style: italic; }
+        body { overflow-x: hidden; }
+        .status-btn { min-width: 110px; text-align: center; }
+        @media (max-width: 900px) {
+          aside { width: 100vw !important; position: static !important; }
+          main { margin-left: 0 !important; }
+        }
       `}</style>
     </div>
   );

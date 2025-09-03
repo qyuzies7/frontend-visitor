@@ -4,7 +4,7 @@ import LandingPage from "./pages/LandingPage";
 import MultiStepForm from "./pages/MultiStepForm";
 import CekStatus from "./pages/CekStatus";
 import HasilCek from "./pages/HasilCek";
-import HasilTolak from './pages/HasilTolak';
+import HasilTolak from "./pages/HasilTolak";
 import HasilProses from "./pages/HasilProses";
 
 import { 
@@ -14,6 +14,7 @@ import {
   KartuVisitor, 
   RiwayatPengembalian 
 } from "./admin";
+import FormDetail from "./admin/FormDetail"; // Tambahkan untuk halaman detail visitor
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
         <Route path="/admin/verifikasi" element={<VerifikasiPersetujuan />} />
         <Route path="/admin/kartu-visitor" element={<KartuVisitor />} />
         <Route path="/admin/riwayat" element={<RiwayatPengembalian />} />
+        <Route path="/admin/form-detail" element={<FormDetail />} /> {/* Route detail visitor */}
       </Routes>
     </Router>
   );
