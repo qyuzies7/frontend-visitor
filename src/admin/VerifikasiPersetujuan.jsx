@@ -4,6 +4,13 @@ import { Icon } from "@iconify/react";
 import kaiLogo from "../assets/KAI-logo.png";
 
 const STATUS_KEY = "status_pengajuan_azida";
+
+// Ambil status dari localStorage dan fallback ke "Menunggu" kalau kosong/null/spasi
+function getAzidaStatus() {
+  const raw = localStorage.getItem(STATUS_KEY);
+  return raw && raw.trim() !== "" ? raw : "Menunggu";
+}
+
 // Dummy data 
 const dummyPengajuan = [
   {
@@ -11,7 +18,7 @@ const dummyPengajuan = [
     jenis: "Magang",
     tanggal: "08 Agustus 2025",
     dokumen: "dummy.pdf",
-    status: localStorage.getItem(STATUS_KEY) || "Menunggu",
+    status: getAzidaStatus(),
   },
   {
     nama: "Milano Sitanggang",
@@ -76,7 +83,26 @@ export default function VerifikasiPersetujuan() {
   const location = useLocation();
   const adminName = "Admin rafi";
 
-  const filteredData = dummyPengajuan.filter((item) =>
+  // Untuk update status Azida live ketika kembali dari detail
+  const [azidaStatus, setAzidaStatus] = useState(getAzidaStatus());
+
+  // Refresh status Azida setiap kali kembali ke halaman ini
+  React.useEffect(() => {
+    const handleFocus = () => setAzidaStatus(getAzidaStatus());
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, []);
+
+  // List data dengan status Azida yang sudah pasti tidak blank
+  const pengajuanList = [
+    {
+      ...dummyPengajuan[0],
+      status: azidaStatus,
+    },
+    ...dummyPengajuan.slice(1),
+  ];
+
+  const filteredData = pengajuanList.filter((item) =>
     item.nama.toLowerCase().includes(query.toLowerCase())
   );
 
@@ -252,7 +278,7 @@ export default function VerifikasiPersetujuan() {
               />
             </div>
             <div className="font-poppins font-medium text-[#474646] text-[18px] ml-auto">
-              Menunggu : {dummyPengajuan.filter(d => d.status === "Menunggu").length}
+              Menunggu : {pengajuanList.filter(d => d.status === "Menunggu").length}
             </div>
           </div>
 
@@ -291,15 +317,15 @@ export default function VerifikasiPersetujuan() {
                       <div
                         className="status-btn font-poppins font-semibold text-[15px] px-5 py-1 rounded-[8px]"
                         style={{
-                          background: statusConfig[row.status].bg,
-                          color: statusConfig[row.status].color,
+                          background: statusConfig[row.status]?.bg || "#eee",
+                          color: statusConfig[row.status]?.color || "#555",
                           minWidth: "110px",
                           display: "inline-flex",
                           justifyContent: "center",
                           alignItems: "center",
                         }}
                       >
-                        {statusConfig[row.status].label}
+                        {statusConfig[row.status]?.label || row.status || "-"}
                       </div>
                     </td>
                     <td className="py-2 px-2 text-center">

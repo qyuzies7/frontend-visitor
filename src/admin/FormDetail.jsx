@@ -23,7 +23,7 @@ const STATUS_KEY = "status_pengajuan_azida";
 const CATATAN_KEY = "catatan_pengajuan_azida";
 
 export default function FormDetail() {
-  // Ambil status dan catatan dari localStorage supaya sinkron dengan halaman verifikasi
+  // Ambil status dan catatan dari l
   const getStatusLocal = () => localStorage.getItem(STATUS_KEY) || "Menunggu Persetujuan";
   const getCatatanLocal = () => localStorage.getItem(CATATAN_KEY) || "";
 
@@ -316,7 +316,6 @@ export default function FormDetail() {
         {/* Card Detail */}
         <div className="w-full max-w-[900px] mx-auto">
           <div className="bg-white rounded-[20px] shadow-md p-8 relative">
-            {/* Breadcrumb */}
             <div className="text-[15px] mb-3 font-poppins flex items-center">
               <span
                 className="cursor-pointer"
