@@ -3,14 +3,15 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import kaiLogo from "../assets/KAI-logo.png";
 
-// Dummy data untuk percobaan
+const STATUS_KEY = "status_pengajuan_azida";
+// Dummy data 
 const dummyPengajuan = [
   {
     nama: "Azida Kautsar",
     jenis: "Magang",
     tanggal: "08 Agustus 2025",
     dokumen: "dummy.pdf",
-    status: "Menunggu",
+    status: localStorage.getItem(STATUS_KEY) || "Menunggu",
   },
   {
     nama: "Milano Sitanggang",
