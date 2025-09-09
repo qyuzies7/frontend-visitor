@@ -14,6 +14,14 @@ export default function AdminLogin() {
   const handleLogin = (e) => {
     e.preventDefault();
     if (email === "admin@kai.id" && password === "admin123") {
+      // Store admin data in localStorage
+      const adminData = {
+        email: email,
+        name: "Admin Rafi",
+        isLoggedIn: true,
+        loginTime: new Date().toISOString()
+      };
+      localStorage.setItem("adminData", JSON.stringify(adminData));
       navigate("/admin/dashboard");
     } else {
       setErr("Email atau Password salah!");
