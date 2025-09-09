@@ -153,6 +153,18 @@ export default function KartuVisitor() {
   const [laporanPenanganan, setLaporanPenanganan] = useState("");
   const [readonlyLaporan, setReadonlyLaporan] = useState(false);
 
+  // Get admin data from localStorage
+  const getAdminData = () => {
+    try {
+      const adminData = localStorage.getItem("adminData");
+      return adminData ? JSON.parse(adminData) : { name: "Admin Rafi" };
+    } catch (error) {
+      return { name: "Admin Rafi" };
+    }
+  };
+
+  const adminData = getAdminData();
+
   // Export laporan (download file excel/csv dummy)
   const exportLaporan = () => {
     const header = [
@@ -226,7 +238,7 @@ export default function KartuVisitor() {
     setDummyData(prev =>
       prev.map((row, idx) =>
         idx === selectedIdx
-          ? { ...row, aksi: "Serahkan Kartu", petugasSerah: "Rafi" }
+          ? { ...row, aksi: "Serahkan Kartu", petugasSerah: adminData.name }
           : row
       )
     );
@@ -239,6 +251,23 @@ export default function KartuVisitor() {
       prev.map((row, idx) =>
         idx === selectedIdx
           ? { ...row, aksi: "Terima Kartu" }
+          : row
+      )
+    );
+  };
+
+  // Handle save laporan kartu rusak/hilang
+  const handleSaveLaporan = () => {
+    setShowPopup(false);
+    setDummyData(prev =>
+      prev.map((row, idx) =>
+        idx === selectedIdx
+          ? { 
+              ...row, 
+              kondisi: laporanKondisi, 
+              alasan: laporanAlasan, 
+              penanganan: laporanPenanganan 
+            }
           : row
       )
     );
@@ -341,10 +370,10 @@ export default function KartuVisitor() {
                 }}
               >
                 <span className="w-[38px] h-[38px] rounded-full bg-[#6A8BB0] flex items-center justify-center text-white text-[24px] font-poppins font-semibold mr-2">
-                  A
+                  {adminData.name ? adminData.name.charAt(0).toUpperCase() : "A"}
                 </span>
                 <span className="font-poppins font-medium text-[18px] leading-[36px] text-[#474646]">
-                  Admin rafi
+                  {adminData.name || "Admin Rafi"}
                 </span>
               </button>
             </div>
@@ -522,46 +551,80 @@ export default function KartuVisitor() {
         >
           {selectedIdx !== null && (
             <>
-              <div className="bg-[#F3F4F7] rounded-[7px] px-4 py-3 mb-5 font-poppins font-medium text-[#474646]">
-                Data Penerima Kartu
+              <div className="bg-[#F8F9FA] rounded-[8px] px-5 py-4 mb-6 border-l-4 border-[#6A8BB0]">
+                <div className="flex items-center gap-2 mb-2">
+                  <Icon icon="solar:user-bold" width={20} color="#6A8BB0" />
+                  <span className="font-poppins font-semibold text-[16px] text-[#474646]">
+                    Data Penerima Kartu
+                  </span>
+                </div>
               </div>
-              <table className="w-full mb-4 text-[15px]">
-                <tbody>
-                  <tr>
-                    <td className="font-poppins" style={{ width: 145 }}>Nama Lengkap</td>
-                    <td>: {dummyData[selectedIdx].nama}</td>
-                  </tr>
-                  <tr>
-                    <td className="font-poppins">Nomor Pengajuan</td>
-                    <td>: {dummyData[selectedIdx].nomorPengajuan}</td>
-                  </tr>
-                  <tr>
-                    <td className="font-poppins">Instansi</td>
-                    <td>: {dummyData[selectedIdx].instansi}</td>
-                  </tr>
-                  <tr>
-                    <td className="font-poppins">Tanggal Kunjungan</td>
-                    <td>: {dummyData[selectedIdx].kunjungan}</td>
-                  </tr>
-                  <tr>
-                    <td className="font-poppins">Email</td>
-                    <td>: {dummyData[selectedIdx].email}</td>
-                  </tr>
-                </tbody>
-              </table>
-              <div className="bg-[#F3F4F7] rounded-[7px] px-4 py-2 font-poppins font-medium text-[#474646] mb-4">
-                Petugas : Rafi
+              <div className="bg-white rounded-[8px] border border-gray-200 px-4 py-4 mb-5">
+                <table className="w-full text-[15px]">
+                  <tbody>
+                    <tr className="border-b border-gray-100">
+                      <td className="font-poppins font-medium py-2 text-[#474646]" style={{ width: 150 }}>
+                        Nama Lengkap
+                      </td>
+                      <td className="font-poppins py-2 text-[#474646]">
+                        : {dummyData[selectedIdx].nama}
+                      </td>
+                    </tr>
+                    <tr className="border-b border-gray-100">
+                      <td className="font-poppins font-medium py-2 text-[#474646]">
+                        Nomor Pengajuan
+                      </td>
+                      <td className="font-poppins py-2 text-[#474646]">
+                        : {dummyData[selectedIdx].nomorPengajuan}
+                      </td>
+                    </tr>
+                    <tr className="border-b border-gray-100">
+                      <td className="font-poppins font-medium py-2 text-[#474646]">
+                        Instansi
+                      </td>
+                      <td className="font-poppins py-2 text-[#474646]">
+                        : {dummyData[selectedIdx].instansi}
+                      </td>
+                    </tr>
+                    <tr className="border-b border-gray-100">
+                      <td className="font-poppins font-medium py-2 text-[#474646]">
+                        Tujuan Kunjungan
+                      </td>
+                      <td className="font-poppins py-2 text-[#474646]">
+                        : {dummyData[selectedIdx].kunjungan}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="font-poppins font-medium py-2 text-[#474646]">
+                        Email
+                      </td>
+                      <td className="font-poppins py-2 text-[#474646]">
+                        : {dummyData[selectedIdx].email}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
-              <div className="flex justify-end gap-4 mt-4">
-                <button className="px-7 py-2 rounded-[7px] font-poppins font-medium text-white"
-                  style={{ background: "linear-gradient(90deg, #6A8BB0 0%, #5E5BAD 100%)" }}
-                  onClick={() => setShowPopup(false)}>
+              <div className="bg-[#E8F4FD] rounded-[8px] px-4 py-3 mb-6 border border-[#B3D9F7]">
+                <div className="flex items-center gap-2">
+                  <Icon icon="solar:user-id-bold" width={18} color="#0066CC" />
+                  <span className="font-poppins font-medium text-[15px] text-[#0066CC]">
+                    Petugas Penyerah: {adminData.name}
+                  </span>
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 mt-6">
+                <button 
+                  className="px-6 py-2.5 rounded-[8px] font-poppins font-medium text-[#6A8BB0] border border-[#6A8BB0] hover:bg-[#6A8BB0] hover:text-white transition-all"
+                  onClick={() => setShowPopup(false)}
+                >
                   Kembali
                 </button>
-                <button className="px-7 py-2 rounded-[7px] font-poppins font-medium text-white"
-                  style={{ background: "#28A745" }}
-                  onClick={handleKonfirmasiSerah}>
-                  Konfirmasi
+                <button 
+                  className="px-6 py-2.5 rounded-[8px] font-poppins font-medium text-white bg-[#28A745] hover:bg-[#218838] transition-all"
+                  onClick={handleKonfirmasiSerah}
+                >
+                  Konfirmasi Penyerahan
                 </button>
               </div>
             </>
@@ -576,49 +639,90 @@ export default function KartuVisitor() {
         >
           {selectedIdx !== null && (
             <>
-              <div className="bg-[#F3F4F7] rounded-[7px] px-4 py-3 mb-5 font-poppins font-medium text-[#474646]">
-                Data Penerima Kartu
+              <div className="bg-[#F8F9FA] rounded-[8px] px-5 py-4 mb-6 border-l-4 border-[#6A8BB0]">
+                <div className="flex items-center gap-2 mb-2">
+                  <Icon icon="solar:user-bold" width={20} color="#6A8BB0" />
+                  <span className="font-poppins font-semibold text-[16px] text-[#474646]">
+                    Data Penerima Kartu
+                  </span>
+                </div>
               </div>
-              <table className="w-full mb-4 text-[15px]">
-                <tbody>
-                  <tr>
-                    <td className="font-poppins" style={{ width: 145 }}>Nama Lengkap</td>
-                    <td>: {dummyData[selectedIdx].nama}</td>
-                  </tr>
-                  <tr>
-                    <td className="font-poppins">Nomor Pengajuan</td>
-                    <td>: {dummyData[selectedIdx].nomorPengajuan}</td>
-                  </tr>
-                  <tr>
-                    <td className="font-poppins">Instansi</td>
-                    <td>: {dummyData[selectedIdx].instansi}</td>
-                  </tr>
-                  <tr>
-                    <td className="font-poppins">Tanggal Kunjungan</td>
-                    <td>: {dummyData[selectedIdx].kunjungan}</td>
-                  </tr>
-                  <tr>
-                    <td className="font-poppins">Email</td>
-                    <td>: {dummyData[selectedIdx].email}</td>
-                  </tr>
-                </tbody>
-              </table>
-              <div className="bg-[#F3F4F7] rounded-[7px] px-4 py-2 font-poppins font-medium text-[#474646] mb-2">
-                Petugas Penyerah : {dummyData[selectedIdx].petugasSerah || "Rafi"}
+              <div className="bg-white rounded-[8px] border border-gray-200 px-4 py-4 mb-5">
+                <table className="w-full text-[15px]">
+                  <tbody>
+                    <tr className="border-b border-gray-100">
+                      <td className="font-poppins font-medium py-2 text-[#474646]" style={{ width: 150 }}>
+                        Nama Lengkap
+                      </td>
+                      <td className="font-poppins py-2 text-[#474646]">
+                        : {dummyData[selectedIdx].nama}
+                      </td>
+                    </tr>
+                    <tr className="border-b border-gray-100">
+                      <td className="font-poppins font-medium py-2 text-[#474646]">
+                        Nomor Pengajuan
+                      </td>
+                      <td className="font-poppins py-2 text-[#474646]">
+                        : {dummyData[selectedIdx].nomorPengajuan}
+                      </td>
+                    </tr>
+                    <tr className="border-b border-gray-100">
+                      <td className="font-poppins font-medium py-2 text-[#474646]">
+                        Instansi
+                      </td>
+                      <td className="font-poppins py-2 text-[#474646]">
+                        : {dummyData[selectedIdx].instansi}
+                      </td>
+                    </tr>
+                    <tr className="border-b border-gray-100">
+                      <td className="font-poppins font-medium py-2 text-[#474646]">
+                        Tujuan Kunjungan
+                      </td>
+                      <td className="font-poppins py-2 text-[#474646]">
+                        : {dummyData[selectedIdx].kunjungan}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="font-poppins font-medium py-2 text-[#474646]">
+                        Email
+                      </td>
+                      <td className="font-poppins py-2 text-[#474646]">
+                        : {dummyData[selectedIdx].email}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
-              <div className="bg-[#F3F4F7] rounded-[7px] px-4 py-2 font-poppins font-medium text-[#474646] mb-4">
-                Petugas Penerima : Rafi
+              <div className="space-y-3 mb-6">
+                <div className="bg-[#FFF3CD] rounded-[8px] px-4 py-3 border border-[#FFEAA7]">
+                  <div className="flex items-center gap-2">
+                    <Icon icon="solar:arrow-right-bold" width={18} color="#856404" />
+                    <span className="font-poppins font-medium text-[15px] text-[#856404]">
+                      Petugas Penyerah: {dummyData[selectedIdx].petugasSerah || adminData.name}
+                    </span>
+                  </div>
+                </div>
+                <div className="bg-[#D1ECF1] rounded-[8px] px-4 py-3 border border-[#ABDDE5]">
+                  <div className="flex items-center gap-2">
+                    <Icon icon="solar:arrow-left-bold" width={18} color="#0C5460" />
+                    <span className="font-poppins font-medium text-[15px] text-[#0C5460]">
+                      Petugas Penerima: {adminData.name}
+                    </span>
+                  </div>
+                </div>
               </div>
-              <div className="flex justify-end gap-4 mt-4">
-                <button className="px-7 py-2 rounded-[7px] font-poppins font-medium text-white"
-                  style={{ background: "linear-gradient(90deg, #6A8BB0 0%, #5E5BAD 100%)" }}
-                  onClick={() => setShowPopup(false)}>
+              <div className="flex justify-end gap-3 mt-6">
+                <button 
+                  className="px-6 py-2.5 rounded-[8px] font-poppins font-medium text-[#6A8BB0] border border-[#6A8BB0] hover:bg-[#6A8BB0] hover:text-white transition-all"
+                  onClick={() => setShowPopup(false)}
+                >
                   Kembali
                 </button>
-                <button className="px-7 py-2 rounded-[7px] font-poppins font-medium text-white"
-                  style={{ background: "#007BFF" }}
-                  onClick={handleKonfirmasiTerima}>
-                  Konfirmasi
+                <button 
+                  className="px-6 py-2.5 rounded-[8px] font-poppins font-medium text-white bg-[#007BFF] hover:bg-[#0056b3] transition-all"
+                  onClick={handleKonfirmasiTerima}
+                >
+                  Konfirmasi Penerimaan
                 </button>
               </div>
             </>
@@ -628,49 +732,89 @@ export default function KartuVisitor() {
         {/* POPUP TERIMA (READ ONLY) */}
         <Popup
           show={showPopup && popupType === "terima-read"}
-          title="Konfirmasi Penerimaan Kartu Visitor"
+          title="Data Penerimaan Kartu Visitor"
           onClose={() => setShowPopup(false)}
         >
           {selectedIdx !== null && (
             <>
-              <div className="bg-[#F3F4F7] rounded-[7px] px-4 py-3 mb-5 font-poppins font-medium text-[#474646]">
-                Data Penerima Kartu
+              <div className="bg-[#F8F9FA] rounded-[8px] px-5 py-4 mb-6 border-l-4 border-[#6A8BB0]">
+                <div className="flex items-center gap-2 mb-2">
+                  <Icon icon="solar:user-bold" width={20} color="#6A8BB0" />
+                  <span className="font-poppins font-semibold text-[16px] text-[#474646]">
+                    Data Penerima Kartu
+                  </span>
+                </div>
               </div>
-              <table className="w-full mb-4 text-[15px]">
-                <tbody>
-                  <tr>
-                    <td className="font-poppins" style={{ width: 145 }}>Nama Lengkap</td>
-                    <td>: {dummyData[selectedIdx].nama}</td>
-                  </tr>
-                  <tr>
-                    <td className="font-poppins">Nomor Pengajuan</td>
-                    <td>: {dummyData[selectedIdx].nomorPengajuan}</td>
-                  </tr>
-                  <tr>
-                    <td className="font-poppins">Instansi</td>
-                    <td>: {dummyData[selectedIdx].instansi}</td>
-                  </tr>
-                  <tr>
-                    <td className="font-poppins">Tanggal Kunjungan</td>
-                    <td>: {dummyData[selectedIdx].kunjungan}</td>
-                  </tr>
-                  <tr>
-                    <td className="font-poppins">Email</td>
-                    <td>: {dummyData[selectedIdx].email}</td>
-                  </tr>
-                </tbody>
-              </table>
-              <div className="bg-[#F3F4F7] rounded-[7px] px-4 py-2 font-poppins font-medium text-[#474646] mb-2">
-                Petugas Penyerah : {dummyData[selectedIdx].petugasSerah || "Rafi"}
+              <div className="bg-white rounded-[8px] border border-gray-200 px-4 py-4 mb-5">
+                <table className="w-full text-[15px]">
+                  <tbody>
+                    <tr className="border-b border-gray-100">
+                      <td className="font-poppins font-medium py-2 text-[#474646]" style={{ width: 150 }}>
+                        Nama Lengkap
+                      </td>
+                      <td className="font-poppins py-2 text-[#474646]">
+                        : {dummyData[selectedIdx].nama}
+                      </td>
+                    </tr>
+                    <tr className="border-b border-gray-100">
+                      <td className="font-poppins font-medium py-2 text-[#474646]">
+                        Nomor Pengajuan
+                      </td>
+                      <td className="font-poppins py-2 text-[#474646]">
+                        : {dummyData[selectedIdx].nomorPengajuan}
+                      </td>
+                    </tr>
+                    <tr className="border-b border-gray-100">
+                      <td className="font-poppins font-medium py-2 text-[#474646]">
+                        Instansi
+                      </td>
+                      <td className="font-poppins py-2 text-[#474646]">
+                        : {dummyData[selectedIdx].instansi}
+                      </td>
+                    </tr>
+                    <tr className="border-b border-gray-100">
+                      <td className="font-poppins font-medium py-2 text-[#474646]">
+                        Tujuan Kunjungan
+                      </td>
+                      <td className="font-poppins py-2 text-[#474646]">
+                        : {dummyData[selectedIdx].kunjungan}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="font-poppins font-medium py-2 text-[#474646]">
+                        Email
+                      </td>
+                      <td className="font-poppins py-2 text-[#474646]">
+                        : {dummyData[selectedIdx].email}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
-              <div className="bg-[#F3F4F7] rounded-[7px] px-4 py-2 font-poppins font-medium text-[#474646] mb-4">
-                Petugas Penerima : Rafi
+              <div className="space-y-3 mb-6">
+                <div className="bg-[#FFF3CD] rounded-[8px] px-4 py-3 border border-[#FFEAA7]">
+                  <div className="flex items-center gap-2">
+                    <Icon icon="solar:arrow-right-bold" width={18} color="#856404" />
+                    <span className="font-poppins font-medium text-[15px] text-[#856404]">
+                      Petugas Penyerah: {dummyData[selectedIdx].petugasSerah || adminData.name}
+                    </span>
+                  </div>
+                </div>
+                <div className="bg-[#D1ECF1] rounded-[8px] px-4 py-3 border border-[#ABDDE5]">
+                  <div className="flex items-center gap-2">
+                    <Icon icon="solar:arrow-left-bold" width={18} color="#0C5460" />
+                    <span className="font-poppins font-medium text-[15px] text-[#0C5460]">
+                      Petugas Penerima: {adminData.name}
+                    </span>
+                  </div>
+                </div>
               </div>
-              <div className="flex justify-end gap-4 mt-4">
-                <button className="px-7 py-2 rounded-[7px] font-poppins font-medium text-white"
-                  style={{ background: "linear-gradient(90deg, #6A8BB0 0%, #5E5BAD 100%)" }}
-                  onClick={() => setShowPopup(false)}>
-                  Kembali
+              <div className="flex justify-end gap-3 mt-6">
+                <button 
+                  className="px-6 py-2.5 rounded-[8px] font-poppins font-medium text-white bg-[#6A8BB0] hover:bg-[#5A7BA0] transition-all"
+                  onClick={() => setShowPopup(false)}
+                >
+                  Tutup
                 </button>
               </div>
             </>
@@ -685,61 +829,117 @@ export default function KartuVisitor() {
         >
           {selectedIdx !== null && (
             <>
-              <div className="bg-[#F3F4F7] rounded-[7px] px-4 py-3 mb-5 font-poppins font-medium text-[#474646]">
-                Laporan Kartu
+              <div className="bg-[#F8F9FA] rounded-[8px] px-5 py-4 mb-6 border-l-4 border-[#DC3545]">
+                <div className="flex items-center gap-2 mb-2">
+                  <Icon icon="solar:danger-triangle-bold" width={20} color="#DC3545" />
+                  <span className="font-poppins font-semibold text-[16px] text-[#474646]">
+                    Laporan Kartu Visitor
+                  </span>
+                </div>
               </div>
-              <table className="w-full mb-4 text-[15px]">
-                <tbody>
-                  <tr><td className="font-poppins" style={{ width: 145 }}>Nama Lengkap</td><td>: {dummyData[selectedIdx].nama}</td></tr>
-                  <tr><td className="font-poppins">Instansi</td><td>: {dummyData[selectedIdx].instansi}</td></tr>
-                  <tr><td className="font-poppins">Tanggal Kunjungan</td><td>: {formatTanggal(dummyData[selectedIdx].tanggalPinjam)}</td></tr>
-                  <tr>
-                    <td className="font-poppins">Kondisi Kartu</td>
-                    <td>
-                      :{" "}
-                      {readonlyLaporan ? (
-                        <span>{dummyData[selectedIdx].kondisi}</span>
-                      ) : (
-                        <select className="rounded px-2 py-1 border font-poppins"
-                          style={{ minWidth: 80 }}
-                          value={laporanKondisi}
-                          onChange={e => setLaporanKondisi(e.target.value)}>
-                          <option value="Baik">Baik</option>
-                          <option value="Hilang">Hilang</option>
-                          <option value="Rusak">Rusak</option>
-                        </select>
-                      )}
-                    </td>
-                  </tr>
-                  <tr><td className="font-poppins">Petugas</td><td>: Rafi</td></tr>
-                </tbody>
-              </table>
-              <div className="mb-3 font-poppins font-medium" style={{ color: "#474646" }}>Alasan :</div>
-              <textarea
-                className="w-full rounded-[7px] px-3 py-2 font-poppins mb-3 border"
-                style={{ minHeight: 55, background: "#F7F7F7" }}
-                value={laporanAlasan}
-                onChange={e => setLaporanAlasan(e.target.value)}
-                disabled={readonlyLaporan}
-              />
-              <div className="mb-3 font-poppins font-medium" style={{ color: "#474646" }}>Penanganan :</div>
-              <textarea
-                className="w-full rounded-[7px] px-3 py-2 font-poppins mb-4 border"
-                style={{ minHeight: 55, background: "#F7F7F7" }}
-                value={laporanPenanganan}
-                onChange={e => setLaporanPenanganan(e.target.value)}
-                disabled={readonlyLaporan}
-              />
-              <div className="flex justify-end gap-4 mt-2">
-                <button className="px-7 py-2 rounded-[7px] font-poppins font-medium text-white"
-                  style={{ background: "linear-gradient(90deg, #6A8BB0 0%, #5E5BAD 100%)" }}
-                  onClick={() => setShowPopup(false)}>
-                  Kembali
+              
+              <div className="bg-white rounded-[8px] border border-gray-200 px-4 py-4 mb-5">
+                <table className="w-full text-[15px]">
+                  <tbody>
+                    <tr className="border-b border-gray-100">
+                      <td className="font-poppins font-medium py-2 text-[#474646]" style={{ width: 150 }}>
+                        Nama Lengkap
+                      </td>
+                      <td className="font-poppins py-2 text-[#474646]">
+                        : {dummyData[selectedIdx].nama}
+                      </td>
+                    </tr>
+                    <tr className="border-b border-gray-100">
+                      <td className="font-poppins font-medium py-2 text-[#474646]">
+                        Instansi
+                      </td>
+                      <td className="font-poppins py-2 text-[#474646]">
+                        : {dummyData[selectedIdx].instansi}
+                      </td>
+                    </tr>
+                    <tr className="border-b border-gray-100">
+                      <td className="font-poppins font-medium py-2 text-[#474646]">
+                        Tanggal Kunjungan
+                      </td>
+                      <td className="font-poppins py-2 text-[#474646]">
+                        : {formatTanggal(dummyData[selectedIdx].tanggalPinjam)}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="font-poppins font-medium py-2 text-[#474646]">
+                        Petugas
+                      </td>
+                      <td className="font-poppins py-2 text-[#474646]">
+                        : {adminData.name}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="space-y-4 mb-6">
+                <div>
+                  <label className="block font-poppins font-medium text-[15px] text-[#474646] mb-2">
+                    Kondisi Kartu <span className="text-red-500">*</span>
+                  </label>
+                  {readonlyLaporan ? (
+                    <div className="w-full h-10 px-3 py-2 bg-gray-100 border border-gray-300 rounded-[8px] font-poppins text-[15px] text-[#474646] flex items-center">
+                      {dummyData[selectedIdx].kondisi}
+                    </div>
+                  ) : (
+                    <select 
+                      className="w-full h-10 px-3 py-2 border border-gray-300 rounded-[8px] font-poppins text-[15px] text-[#474646] focus:outline-none focus:ring-2 focus:ring-[#6A8BB0] focus:border-transparent"
+                      value={laporanKondisi}
+                      onChange={e => setLaporanKondisi(e.target.value)}
+                    >
+                      <option value="Baik">Baik</option>
+                      <option value="Hilang">Hilang</option>
+                      <option value="Rusak">Rusak</option>
+                    </select>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block font-poppins font-medium text-[15px] text-[#474646] mb-2">
+                    Alasan <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    className="w-full min-h-[80px] px-3 py-2 border border-gray-300 rounded-[8px] font-poppins text-[15px] text-[#474646] focus:outline-none focus:ring-2 focus:ring-[#6A8BB0] focus:border-transparent resize-vertical"
+                    placeholder="Jelaskan alasan kartu rusak atau hilang..."
+                    value={laporanAlasan}
+                    onChange={e => setLaporanAlasan(e.target.value)}
+                    disabled={readonlyLaporan}
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-poppins font-medium text-[15px] text-[#474646] mb-2">
+                    Penanganan <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    className="w-full min-h-[80px] px-3 py-2 border border-gray-300 rounded-[8px] font-poppins text-[15px] text-[#474646] focus:outline-none focus:ring-2 focus:ring-[#6A8BB0] focus:border-transparent resize-vertical"
+                    placeholder="Jelaskan tindakan penanganan yang dilakukan..."
+                    value={laporanPenanganan}
+                    onChange={e => setLaporanPenanganan(e.target.value)}
+                    disabled={readonlyLaporan}
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 mt-6">
+                <button 
+                  className="px-6 py-2.5 rounded-[8px] font-poppins font-medium text-[#6A8BB0] border border-[#6A8BB0] hover:bg-[#6A8BB0] hover:text-white transition-all"
+                  onClick={() => setShowPopup(false)}
+                >
+                  {readonlyLaporan ? "Tutup" : "Kembali"}
                 </button>
                 {!readonlyLaporan && (
-                  <button className="px-7 py-2 rounded-[7px] font-poppins font-medium text-white"
-                    style={{ background: "#28A745" }}>
-                    Simpan
+                  <button 
+                    className="px-6 py-2.5 rounded-[8px] font-poppins font-medium text-white bg-[#28A745] hover:bg-[#218838] transition-all"
+                    onClick={handleSaveLaporan}
+                    disabled={!laporanKondisi || !laporanAlasan.trim() || !laporanPenanganan.trim()}
+                  >
+                    Simpan Laporan
                   </button>
                 )}
               </div>
