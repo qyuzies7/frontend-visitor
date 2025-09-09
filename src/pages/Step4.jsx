@@ -15,7 +15,7 @@ const Step4 = ({ formData, prevStep, nextStep }) => {
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md border border-gray-300 w-full px-4">
+    <div className="bg-white p-6 rounded-lg shadow-md border border-gray-300 max-w-4xl mx-auto">
       <h2 className="text-xl font-semibold mb-4 text-blue-600 flex items-center">
         <FaPaperPlane className="mr-2 text-blue-600" /> Konfirmasi Data
       </h2>
@@ -93,7 +93,7 @@ const Step4 = ({ formData, prevStep, nextStep }) => {
         </button>
         <button
           onClick={handleSubmit}
-          className={`px-6 py-2 rounded-md font-semibold text-white transition-colors ${
+          className={`px-6 py-2 rounded-md text-white transition-colors ${
             agreed ? 'bg-customBlue hover:bg-customBlue-hover' : 'bg-gray-400 cursor-not-allowed'
           }`}
           disabled={!agreed}

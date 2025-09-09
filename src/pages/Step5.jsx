@@ -6,10 +6,10 @@ const Step5 = ({ submissionNumber }) => {
   const navigate = useNavigate();
 
   const handleCheckStatus = () => {
-    // Navigasi ke halaman cek status dengan nomor pengajuan sudah terisi
+    // Navigasi ke halaman cek status, kirim sebagai submissionNumber untuk konsistensi
     navigate('/status', { 
       state: { 
-        nomorPengajuan: submissionNumber,
+        submissionNumber: submissionNumber,
         fromSubmission: true 
       } 
     });
@@ -40,13 +40,12 @@ const Step5 = ({ submissionNumber }) => {
         <ul className="list-disc list-inside text-gray-700 text-sm space-y-2">
           <li>Notifikasi status akan dikirim melalui Email/WhatsApp</li>
           <li>Simpan nomor pengajuan untuk melacak status permohonan</li>
-          <li>Proses verifikasi biasanya memakan waktu 1-3 hari kerja</li>
           <li>Hubungi (0274) 563-456 jika ada pertanyaan mendesak</li>
         </ul>
       </div>
 
       {/* Status Check Process Info */}
-      <div className="bg-gray-50 p-4 rounded-lg mb-6 max-w-md mx-auto">
+      <div className="bg-gray-50 p-4 rounded-md mb-6 max-w-md mx-auto">
         <h5 className="font-semibold text-sm mb-2">Proses Selanjutnya:</h5>
         <div className="text-sm text-gray-600 space-y-1">
           <div className="flex items-center">
@@ -67,13 +66,13 @@ const Step5 = ({ submissionNumber }) => {
       <div className="flex flex-col sm:flex-row gap-4 justify-center">
         <button
           onClick={handleCheckStatus}
-          className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-semibold"
+          className="px-6 py-3 bg-customBlue text-white rounded-md hover:bg-customBlue-hover transition-colors"
         >
           Cek Status Pengajuan
         </button>
         <button
           onClick={handleBackToHome}
-          className="px-6 py-3 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors font-semibold"
+          className="px-6 py-3 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors"
         >
           Kembali ke Beranda
         </button>

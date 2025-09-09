@@ -74,7 +74,7 @@ const Step2 = ({ formData, setFormData, nextStep, prevStep, visitType }) => {
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md border border-gray-300 w-full px-4">
+    <div className="bg-white p-6 rounded-lg shadow-md border border-gray-300 max-w-4xl mx-auto">
       <h2 className="text-xl font-semibold mb-4 text-blue-600 flex items-center">
         <FaUser className="mr-2 text-blue-600" /> Data Diri Pengunjung
       </h2>

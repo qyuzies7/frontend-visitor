@@ -1,9 +1,9 @@
 import React from 'react';
 import { FaUpload } from 'react-icons/fa';
 
-const UploadField = ({ label, name, accept, onChange, error }) => {
+const UploadField = ({ label, name, accept, onChange, error, className }) => {
   return (
-    <div className="border border-gray-300 rounded-lg p-6 text-center">
+    <div className={`border border-gray-300 rounded-lg p-8 min-h-[300px] flex flex-col items-center justify-center text-center ${className || ''}`}>
       <div className="flex justify-center mb-2">
         <FaUpload className="text-2xl text-gray-500" />
       </div>

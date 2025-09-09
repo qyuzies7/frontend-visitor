@@ -34,15 +34,15 @@ const Step3 = ({ formData, setFormData, nextStep, prevStep }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     // Tidak perlu validasi wajib karena upload bersifat opsional
-    nextStep();
+    nextStep(4); // Langsung ke step 4
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md border border-gray-300 w-full px-4">
+    <div className="bg-white p-6 rounded-lg shadow-md border border-gray-300 max-w-4xl mx-auto min-h-[460px] flex flex-col">
       <h2 className="text-xl font-semibold mb-4 text-blue-600 flex items-center">
         <FaFileAlt className="mr-2 text-blue-600" /> Upload Dokumen
       </h2>
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-grow">
         <div className="md:col-span-2">
           <p className="text-sm text-gray-600 mb-2">Surat Tugas (jika ada)</p>
           <UploadField
@@ -53,20 +53,22 @@ const Step3 = ({ formData, setFormData, nextStep, prevStep }) => {
             error={errors.document}
           />
         </div>
-        <div className="flex justify-between md:col-span-2">
-          <button
-            type="button"
-            onClick={prevStep}
-            className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition-colors"
-          >
-            Kembali
-          </button>
-          <button
-            type="submit"
-            className="px-4 py-2 bg-customBlue text-white rounded-md hover:bg-customBlue-hover transition-colors"
-          >
-            Lanjutkan
-          </button>
+        <div className="md:col-span-2 mt-auto">
+          <div className="flex justify-between">
+            <button
+              type="button"
+              onClick={prevStep}
+              className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition-colors"
+            >
+              Kembali
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-customBlue text-white rounded-md hover:bg-customBlue-hover transition-colors"
+            >
+              Lanjutkan
+            </button>
+          </div>
         </div>
       </form>
     </div>

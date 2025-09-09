@@ -3,8 +3,64 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import kaiLogo from "../assets/KAI-logo.png";
 
+const dummyData = [
+  {
+    nama: "Azida Kautsar",
+    tanggalPinjam: "2025-08-04",
+    tanggalKembali: "2025-08-08",
+    kondisi: "Baik",
+    keterangan: "Selesai",
+  },
+  {
+    nama: "Milano Sitanggang",
+    tanggalPinjam: "2025-08-05",
+    tanggalKembali: "2025-08-08",
+    kondisi: "Hilang",
+    keterangan: "Selesai",
+  },
+  {
+    nama: "Azka Mauladina",
+    tanggalPinjam: "2025-08-03",
+    tanggalKembali: "2025-08-08",
+    kondisi: "Hilang",
+    keterangan: "Selesai",
+  },
+  {
+    nama: "Yudhita Meika",
+    tanggalPinjam: "2025-08-06",
+    tanggalKembali: "2025-08-08",
+    kondisi: "Rusak",
+    keterangan: "Selesai",
+  },
+  {
+    nama: "Ahmad Arfan",
+    tanggalPinjam: "2025-08-07",
+    tanggalKembali: "2025-08-08",
+    kondisi: "Baik",
+    keterangan: "Selesai",
+  },
+  {
+    nama: "Gading Subagio",
+    tanggalPinjam: "2025-08-08",
+    tanggalKembali: "2025-08-08",
+    kondisi: "Rusak",
+    keterangan: "Selesai",
+  },
+];
+
+function formatTanggal(str) {
+  const months = [
+    "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+    "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+  ];
+  const d = new Date(str);
+  if (isNaN(d)) return str;
+  return `${String(d.getDate()).padStart(2, "0")} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
 export default function RiwayatPengembalian() {
   const [showDropdown, setShowDropdown] = useState(false);
+  const [query, setQuery] = useState("");
   const dropdownRef = useRef();
   const navigate = useNavigate();
   const location = useLocation();
@@ -54,6 +110,40 @@ export default function RiwayatPengembalian() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Filter berdasarkan nama
+  const filteredData = dummyData.filter((row) =>
+    row.nama.toLowerCase().includes(query.toLowerCase())
+  );
+
+  // Export dummy laporan
+  const exportLaporan = () => {
+    const header = [
+      "Nama Pemohon",
+      "Tanggal Pinjam",
+      "Tanggal Kembali",
+      "Kondisi Kartu",
+      "Keterangan",
+    ].join(",");
+    const rows = filteredData.map(d =>
+      [
+        d.nama,
+        formatTanggal(d.tanggalPinjam),
+        formatTanggal(d.tanggalKembali),
+        d.kondisi,
+        d.keterangan,
+      ].join(",")
+    );
+    const csv = [header, ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "riwayat_pengembalian.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="min-h-screen flex bg-[#6A8BB0] font-poppins">
@@ -106,7 +196,7 @@ export default function RiwayatPengembalian() {
         className="flex-1 flex flex-col px-2 md:px-12 py-10 transition-all"
         style={{ marginLeft: 360, minHeight: "100vh", width: "100%" }}
       >
-        {/* Header */}
+        {/* Kotak atas (JANGAN DIUBAH) */}
         <div className="flex gap-8 mb-10 flex-wrap">
           <div
             className="w-full max-w-[900px] flex items-center bg-white rounded-[20px] shadow-md px-8 py-4 relative mx-auto"
@@ -159,24 +249,112 @@ export default function RiwayatPengembalian() {
           </div>
         </div>
 
-        {/* Content Area */}
+        {/* Data Card Riwayat */}
         <div className="w-full max-w-[900px] mx-auto">
-          <div className="bg-white rounded-[20px] shadow-md p-8 text-center">
-            <Icon icon="solar:card-search-broken" width={80} height={80} className="mx-auto mb-4 text-[#6A8BB0]" />
-            <h3 className="font-poppins font-semibold text-[24px] text-[#474646]">
-              Halaman Riwayat Pengembalian
-            </h3>
-            <p className="font-poppins text-[16px] text-gray-600">
-              Konten halaman akan ditambahkan di sini
-            </p>
+          <div className="bg-white rounded-[20px] shadow-md px-0 py-0">
+            {/* Search & Export */}
+            <div className="flex items-center px-8 pt-8 pb-3">
+              <div className="flex items-center flex-1 bg-white px-4 py-2 rounded-[11px] border border-[#E4E4E4] mr-3"
+                style={{ maxWidth: 360, background: "#F4F4F4" }}>
+                <Icon icon="ic:round-search" width={28} color="#474646" className="mr-2" />
+                <input
+                  type="text"
+                  placeholder="cari berdasarkan nama pemohon"
+                  value={query}
+                  onChange={e => setQuery(e.target.value)}
+                  className="flex-1 outline-none bg-transparent border-0 text-[17px] font-poppins font-light italic text-[#474646]"
+                  style={{ fontStyle: "italic", fontWeight: 300 }}
+                />
+              </div>
+              <button
+                className="px-5 py-2 rounded-[8px] font-poppins font-medium text-white"
+                style={{
+                  background: "linear-gradient(90deg, #6A8BB0 0%, #5E5BAD 100%)",
+                  fontWeight: 500,
+                }}
+                onClick={exportLaporan}
+              >
+                Export Laporan
+              </button>
+            </div>
+            {/* Table */}
+            <div className="overflow-x-auto pb-8 px-8">
+              <table className="w-full min-w-[730px]">
+                <thead>
+                  <tr style={{ background: "#F4F4F4" }}>
+                    <th className="py-3 px-2 text-center font-poppins font-semibold text-[#474646] text-[16px]">Nama Pemohon</th>
+                    <th className="py-3 px-2 text-center font-poppins font-semibold text-[#474646] text-[16px]">Tanggal Pinjam</th>
+                    <th className="py-3 px-2 text-center font-poppins font-semibold text-[#474646] text-[16px]">Tanggal Kembali</th>
+                    <th className="py-3 px-2 text-center font-poppins font-semibold text-[#474646] text-[16px]">Kondisi Kartu</th>
+                    <th className="py-3 px-2 text-center font-poppins font-semibold text-[#474646] text-[16px]">Keterangan</th>
+                    <th className="py-3 px-2 text-center font-poppins font-semibold text-[#474646] text-[16px]">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredData.map((row, idx) => (
+                    <tr key={idx} className={idx % 2 === 0 ? "" : "bg-[#F8F8F8]"}>
+                      <td className="py-2 px-2 text-center font-poppins font-semibold text-[15px] text-[#474646]">
+                        {row.nama}
+                      </td>
+                      <td className="py-2 px-2 text-center font-poppins font-semibold text-[15px] text-[#474646]">
+                        {formatTanggal(row.tanggalPinjam)}
+                      </td>
+                      <td className="py-2 px-2 text-center font-poppins font-semibold text-[15px] text-[#474646]">
+                        {formatTanggal(row.tanggalKembali)}
+                      </td>
+                      <td className="py-2 px-2 text-center font-poppins font-medium text-[15px] text-[#474646]">
+                        {row.kondisi}
+                      </td>
+                      <td className="py-2 px-2 text-center">
+                        <span
+                          className="font-poppins font-semibold rounded-[7px] px-5 py-1 text-white"
+                          style={{
+                            background: "#34C331",
+                            fontWeight: 600,
+                            display: "inline-block",
+                            borderRadius: 7,
+                            fontSize: 15,
+                            minWidth: 90,
+                          }}
+                        >
+                          Selesai
+                        </span>
+                      </td>
+                      <td className="py-2 px-2 text-center">
+                        <button
+                          className="font-poppins font-semibold rounded-[8px] px-5 py-1 text-white"
+                          style={{
+                            background: "#8E8E8E",
+                            fontWeight: 600,
+                            fontSize: 15,
+                            borderRadius: 8,
+                            minWidth: 110,
+                          }}
+                          onClick={() => navigate("/admin/form-detail")}
+                        >
+                          Lihat Detail
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {filteredData.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="text-center py-6 text-[#aaa] font-poppins font-medium">
+                        Tidak ada data ditemukan.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
+        <style>{`
+          @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+          .font-poppins { font-family: 'Poppins', sans-serif; }
+          input::placeholder { font-family: 'Poppins', sans-serif; font-weight: 300; font-style: italic; }
+        `}</style>
       </main>
-
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
-        .font-poppins { font-family: 'Poppins', sans-serif; }
-      `}</style>
     </div>
   );
 }

@@ -26,6 +26,8 @@ function App() {
         <Route path="/status/approved" element={<HasilCek />} />
         <Route path="/status/rejected" element={<HasilTolak />} />
         <Route path="/status/processing" element={<HasilProses />} />
+
+        {/* Admin Routes */}
         <Route path="/admin" element={<AdminLogin />} />
         <Route path="/admin/dashboard" element={<Dashboard />} />
         <Route path="/admin/verifikasi" element={<VerifikasiPersetujuan />} />

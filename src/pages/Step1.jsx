@@ -62,11 +62,11 @@ const Step1 = ({ onNext }) => {
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
+    <div className="bg-white p-6 rounded-lg shadow-md border border-gray-300 max-w-4xl mx-auto">
       <h2 className="text-xl font-semibold mb-6 text-blue-800 flex items-center">
         <FaUser className="mr-2 text-blue-600" /> Pilih Jenis Kunjungan Anda
       </h2>
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         {visitorTypes.map((type) => (
           <CardType
             key={type.id}
@@ -86,7 +86,7 @@ const Step1 = ({ onNext }) => {
         <button
           onClick={handleSubmit}
           disabled={!selectedType}
-          className={`px-6 py-2 rounded-lg font-semibold text-white transition ${
+          className={`px-4 py-2 rounded-md text-white transition-colors ${
             selectedType ? 'bg-customBlue hover:bg-customBlue-hover' : 'bg-gray-400 cursor-not-allowed'
           }`}
         >

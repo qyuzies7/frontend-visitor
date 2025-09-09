@@ -66,9 +66,11 @@ const MultiStepForm = ({ initialStep = 1 }) => {
   }
 
   return (
-    <div className="min-h-screen bg-blue-100 p-6 font-sans"> {/* Ubah dari font-arial ke font-sans */}
-      <StepIndicator currentStep={step} steps={steps} />
-      {CurrentStep}
+    <div className="min-h-screen bg-blue-100 p-6 font-sans">
+      <div className="max-w-4xl mx-auto">
+        <StepIndicator currentStep={step} steps={steps} />
+        {CurrentStep}
+      </div>
     </div>
   );
 };
