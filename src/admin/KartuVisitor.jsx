@@ -1,6 +1,10 @@
+// /mnt/data/KartuVisitor.jsx
 import React, { useState } from "react";
 import { Icon } from "@iconify/react";
 import kaiLogo from "../assets/KAI-logo.png";
+
+// Ganti cara ambil nama petugas sesuai sistem login aplikasi kamu
+const namaPetugas = localStorage.getItem("namaPetugas") || "Admin rafi";
 
 // Data dummy untuk tabel visitor
 const initialDummyData = [
@@ -123,22 +127,63 @@ const aksiColor = {
   "Belum diambil": "#6C757D",
 };
 
-// Popup utama
+/** ===========================
+ *   POPUP UTAMA (Header sesuai desain)
+ *  =========================== */
 function Popup({ show, onClose, children, title }) {
   if (!show) return null;
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-20">
       <div className="bg-white rounded-[14px] p-0 min-w-[400px] max-w-[520px] w-[97%] shadow-lg relative">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 rounded-t-[14px] bg-gradient-to-r from-[#6A8BB0] to-[#5E5BAD]">
+        {/* Header gradient (circle rounded look) */}
+        <div className="flex items-center justify-between px-6 py-4 rounded-t-[14px]"
+             style={{ background: "linear-gradient(90deg, #6A8BB0 0%, #5E5BAD 100%)" }}>
           <div className="flex items-center gap-2">
-            <Icon icon="solar:card-recive-outline" width={26} color="#fff" />
+            <div className="w-9 h-9 rounded-full bg-white/15 flex items-center justify-center">
+              <Icon icon="material-symbols:id-card-rounded" width={22} color="#fff" />
+            </div>
             <span className="font-poppins font-semibold text-white text-[18px]">{title}</span>
           </div>
-          <button onClick={onClose} className="ml-2 text-white text-[22px] font-bold hover:opacity-70 transition">×</button>
+          <button onClick={onClose}
+                  className="ml-2 text-white text-[22px] font-bold hover:opacity-80 transition">×</button>
         </div>
         <div className="px-7 py-7">{children}</div>
       </div>
+    </div>
+  );
+}
+
+/** Seksi data dengan header abu, garis judul, dan garis-baris tipis */
+function DataSection({ title, thick = 2, children }) {
+  return (
+    <div className="rounded-[10px] overflow-hidden mb-4"
+         style={{ background: "rgba(100,115,175,0.07)", border: "1px solid rgba(208,205,205,0.56)" }}>
+      <div className="px-4 pt-3 pb-2">
+        <div className="font-poppins font-medium text-[#919090] text-[14px]">{title}</div>
+      </div>
+      <div style={{ height: thick, background: "rgba(208,205,205,0.56)" }} />
+      <div className="px-4 py-1">{children}</div>
+    </div>
+  );
+}
+
+function Row({ label, value }) {
+  return (
+    <div className="py-2 flex gap-2 text-[14.5px]"
+         style={{ borderBottom: "1px solid rgba(208,205,205,0.56)" }}>
+      <div className="min-w-[150px] text-[#474646] font-poppins font-medium">{label}</div>
+      <div className="text-[#474646] font-poppins font-medium">: {value}</div>
+    </div>
+  );
+}
+
+function BoxPetugas({ label, value }) {
+  return (
+    <div className="rounded-[10px] px-4 py-3 mb-2"
+         style={{ border: "1px solid rgba(208,205,205,0.56)", background: "#FFFFFF" }}>
+      <span className="font-poppins font-medium text-[#474646]">
+        {label} : {value}
+      </span>
     </div>
   );
 }
@@ -165,7 +210,7 @@ export default function KartuVisitor() {
       "Status",
       "Petugas",
     ].join(",");
-    const rows = dummyData.map(d =>
+    const rows = dummyData.map((d) =>
       [
         d.nama,
         d.instansi,
@@ -188,22 +233,22 @@ export default function KartuVisitor() {
     URL.revokeObjectURL(url);
   };
 
-  // Pop up konfirmasi serahkan kartu
-  const openSerahPopup = idx => {
+  // Pop up konfirmasi serah kartu
+  const openSerahPopup = (idx) => {
     setSelectedIdx(idx);
     setPopupType("serah");
     setShowPopup(true);
   };
 
   // Pop up konfirmasi terima kartu (ada tombol konfirmasi)
-  const openTerimaPopup = idx => {
+  const openTerimaPopup = (idx) => {
     setSelectedIdx(idx);
     setPopupType("terima");
     setShowPopup(true);
   };
 
   // Pop up read-only terima kartu
-  const openTerimaPopupRead = idx => {
+  const openTerimaPopupRead = (idx) => {
     setSelectedIdx(idx);
     setPopupType("terima-read");
     setShowPopup(true);
@@ -223,11 +268,9 @@ export default function KartuVisitor() {
   // Ketika konfirmasi serah kartu
   const handleKonfirmasiSerah = () => {
     setShowPopup(false);
-    setDummyData(prev =>
+    setDummyData((prev) =>
       prev.map((row, idx) =>
-        idx === selectedIdx
-          ? { ...row, aksi: "Serahkan Kartu", petugasSerah: "Rafi" }
-          : row
+        idx === selectedIdx ? { ...row, aksi: "Serahkan Kartu", petugasSerah: namaPetugas } : row
       )
     );
   };
@@ -235,20 +278,44 @@ export default function KartuVisitor() {
   // Ketika konfirmasi terima kartu
   const handleKonfirmasiTerima = () => {
     setShowPopup(false);
-    setDummyData(prev =>
+    setDummyData((prev) =>
+      prev.map((row, idx) => (idx === selectedIdx ? { ...row, aksi: "Terima Kartu" } : row))
+    );
+  };
+
+  // Ketika simpan laporan kondisi kartu hilang/rusak
+  const handleSimpanLaporan = () => {
+    setDummyData((prev) =>
       prev.map((row, idx) =>
         idx === selectedIdx
-          ? { ...row, aksi: "Terima Kartu" }
+          ? {
+              ...row,
+              kondisi: laporanKondisi,
+              alasan: laporanAlasan,
+              penanganan: laporanPenanganan,
+              petugasSerah: namaPetugas,
+            }
           : row
       )
     );
+    setShowPopup(false);
   };
 
   // Format tanggal jadi "DD MMMM YYYY"
   function formatTanggal(str) {
     const months = [
-      "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-      "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+      "Januari",
+      "Februari",
+      "Maret",
+      "April",
+      "Mei",
+      "Juni",
+      "Juli",
+      "Agustus",
+      "September",
+      "Oktober",
+      "November",
+      "Desember",
     ];
     const d = new Date(str);
     if (isNaN(d)) return str;
@@ -288,11 +355,12 @@ export default function KartuVisitor() {
             return (
               <button
                 key={item.label}
-                onClick={() => window.location.href = item.path}
+                onClick={() => (window.location.href = item.path)}
                 className={`flex items-center gap-4 px-4 py-2 text-left transition-all hover:opacity-80
-                  ${isActive
-                    ? "bg-gradient-to-r from-[#6A8BB0] to-[#5E5BAD] text-white font-semibold rounded-[15px]"
-                    : "bg-transparent text-[#474646] font-semibold hover:bg-gray-100 rounded-[15px]"
+                  ${
+                    isActive
+                      ? "bg-gradient-to-r from-[#6A8BB0] to-[#5E5BAD] text-white font-semibold rounded-[15px]"
+                      : "bg-transparent text-[#474646] font-semibold hover:bg-gray-100 rounded-[15px]"
                   } text-[17px]`}
                 style={isActive ? { boxShadow: "0 2px 8px rgba(90,90,140,0.07)" } : {}}
               >
@@ -321,10 +389,7 @@ export default function KartuVisitor() {
               Kartu Visitor
             </span>
             {/* Profile section */}
-            <div
-              className="relative ml-auto"
-              style={{ minWidth: 200 }}
-            >
+            <div className="relative ml-auto" style={{ minWidth: 200 }}>
               <div
                 className="absolute top-0 left-0 w-full h-full"
                 style={{
@@ -341,10 +406,10 @@ export default function KartuVisitor() {
                 }}
               >
                 <span className="w-[38px] h-[38px] rounded-full bg-[#6A8BB0] flex items-center justify-center text-white text-[24px] font-poppins font-semibold mr-2">
-                  A
+                  {namaPetugas[0]}
                 </span>
                 <span className="font-poppins font-medium text-[18px] leading-[36px] text-[#474646]">
-                  Admin rafi
+                  {namaPetugas}
                 </span>
               </button>
             </div>
@@ -375,19 +440,30 @@ export default function KartuVisitor() {
               <table className="w-full min-w-[730px]">
                 <thead>
                   <tr style={{ background: "#F4F4F4" }}>
-                    <th className="py-3 px-2 text-center font-poppins font-semibold text-[#474646] text-[16px]">Nama Pemohon</th>
-                    <th className="py-3 px-2 text-center font-poppins font-semibold text-[#474646] text-[16px]">Tanggal Pinjam</th>
-                    <th className="py-3 px-2 text-center font-poppins font-semibold text-[#474646] text-[16px]">Tanggal Kembali</th>
-                    <th className="py-3 px-2 text-center font-poppins font-semibold text-[#474646] text-[16px]">Kondisi Kartu</th>
-                    <th className="py-3 px-2 text-center font-poppins font-semibold text-[#474646] text-[16px]">Keterangan</th>
-                    <th className="py-3 px-2 text-center font-poppins font-semibold text-[#474646] text-[16px]">Aksi</th>
+                    <th className="py-3 px-2 text-center font-poppins font-semibold text-[#474646] text-[16px]">
+                      Nama Pemohon
+                    </th>
+                    <th className="py-3 px-2 text-center font-poppins font-semibold text-[#474646] text-[16px]">
+                      Tanggal Pinjam
+                    </th>
+                    <th className="py-3 px-2 text-center font-poppins font-semibold text-[#474646] text-[16px]">
+                      Tanggal Kembali
+                    </th>
+                    <th className="py-3 px-2 text-center font-poppins font-semibold text-[#474646] text-[16px]">
+                      Kondisi Kartu
+                    </th>
+                    <th className="py-3 px-2 text-center font-poppins font-semibold text-[#474646] text-[16px]">
+                      Keterangan
+                    </th>
+                    <th className="py-3 px-2 text-center font-poppins font-semibold text-[#474646] text-[16px]">
+                      Aksi
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {dummyData.map((row, idx) => {
                     const statusAuto = getStatusKartu(row.tanggalKembali);
 
-                    // Button kondisi kartu ukuran sama
                     let kondisiBtn = (
                       <button
                         className="font-poppins font-medium rounded-[7px]"
@@ -398,7 +474,7 @@ export default function KartuVisitor() {
                           minWidth: 90,
                           width: 110,
                           height: 36,
-                          display: "inline-block"
+                          display: "inline-block",
                         }}
                         onClick={() =>
                           row.kondisi === "Baik"
@@ -410,7 +486,6 @@ export default function KartuVisitor() {
                       </button>
                     );
 
-                    // Button status aktif/tidak aktif satu baris, ukuran sama
                     let statusBtn = (
                       <span
                         className="font-poppins font-medium rounded-[7px] flex items-center justify-center"
@@ -423,14 +498,13 @@ export default function KartuVisitor() {
                           height: 36,
                           display: "inline-flex",
                           alignItems: "center",
-                          justifyContent: "center"
+                          justifyContent: "center",
                         }}
                       >
                         {statusAuto}
                       </span>
                     );
 
-                    // Button aksi satu baris, logika sesuai permintaan
                     let aksiBtn = null;
                     if (row.aksi === "Belum diambil") {
                       aksiBtn = (
@@ -444,7 +518,7 @@ export default function KartuVisitor() {
                             fontSize: 15,
                             display: "inline-flex",
                             alignItems: "center",
-                            justifyContent: "center"
+                            justifyContent: "center",
                           }}
                           onClick={() => openSerahPopup(idx)}
                         >
@@ -463,7 +537,7 @@ export default function KartuVisitor() {
                             fontSize: 15,
                             display: "inline-flex",
                             alignItems: "center",
-                            justifyContent: "center"
+                            justifyContent: "center",
                           }}
                           onClick={() => openTerimaPopup(idx)}
                         >
@@ -482,7 +556,7 @@ export default function KartuVisitor() {
                             fontSize: 15,
                             display: "inline-flex",
                             alignItems: "center",
-                            justifyContent: "center"
+                            justifyContent: "center",
                           }}
                           onClick={() => openTerimaPopupRead(idx)}
                         >
@@ -522,45 +596,29 @@ export default function KartuVisitor() {
         >
           {selectedIdx !== null && (
             <>
-              <div className="bg-[#F3F4F7] rounded-[7px] px-4 py-3 mb-5 font-poppins font-medium text-[#474646]">
-                Data Penerima Kartu
-              </div>
-              <table className="w-full mb-4 text-[15px]">
-                <tbody>
-                  <tr>
-                    <td className="font-poppins" style={{ width: 145 }}>Nama Lengkap</td>
-                    <td>: {dummyData[selectedIdx].nama}</td>
-                  </tr>
-                  <tr>
-                    <td className="font-poppins">Nomor Pengajuan</td>
-                    <td>: {dummyData[selectedIdx].nomorPengajuan}</td>
-                  </tr>
-                  <tr>
-                    <td className="font-poppins">Instansi</td>
-                    <td>: {dummyData[selectedIdx].instansi}</td>
-                  </tr>
-                  <tr>
-                    <td className="font-poppins">Tanggal Kunjungan</td>
-                    <td>: {dummyData[selectedIdx].kunjungan}</td>
-                  </tr>
-                  <tr>
-                    <td className="font-poppins">Email</td>
-                    <td>: {dummyData[selectedIdx].email}</td>
-                  </tr>
-                </tbody>
-              </table>
-              <div className="bg-[#F3F4F7] rounded-[7px] px-4 py-2 font-poppins font-medium text-[#474646] mb-4">
-                Petugas : Rafi
-              </div>
-              <div className="flex justify-end gap-4 mt-4">
-                <button className="px-7 py-2 rounded-[7px] font-poppins font-medium text-white"
-                  style={{ background: "linear-gradient(90deg, #6A8BB0 0%, #5E5BAD 100%)" }}
-                  onClick={() => setShowPopup(false)}>
+              <DataSection title="Data Penerima Kartu" thick={2}>
+                <Row label="Nama Lengkap" value={dummyData[selectedIdx].nama} />
+                <Row label="Nomor Pengajuan" value={dummyData[selectedIdx].nomorPengajuan} />
+                <Row label="Instansi" value={dummyData[selectedIdx].instansi} />
+                <Row label="Tanggal Kunjungan" value={dummyData[selectedIdx].kunjungan} />
+                <Row label="Email" value={dummyData[selectedIdx].email} />
+              </DataSection>
+
+              <BoxPetugas label="Petugas" value={namaPetugas} />
+
+              <div className="flex justify-end gap-3 mt-5">
+                <button
+                  className="px-7 py-2 rounded-[7px] font-poppins font-medium text-white"
+                  style={{ background: "#ACB3BB" }}
+                  onClick={() => setShowPopup(false)}
+                >
                   Kembali
                 </button>
-                <button className="px-7 py-2 rounded-[7px] font-poppins font-medium text-white"
-                  style={{ background: "#28A745" }}
-                  onClick={handleKonfirmasiSerah}>
+                <button
+                  className="px-7 py-2 rounded-[7px] font-poppins font-medium text-white"
+                  style={{ background: "linear-gradient(90deg, #6A8BB0 0%, #5E5BAD 100%)" }}
+                  onClick={handleKonfirmasiSerah}
+                >
                   Konfirmasi
                 </button>
               </div>
@@ -576,48 +634,33 @@ export default function KartuVisitor() {
         >
           {selectedIdx !== null && (
             <>
-              <div className="bg-[#F3F4F7] rounded-[7px] px-4 py-3 mb-5 font-poppins font-medium text-[#474646]">
-                Data Penerima Kartu
-              </div>
-              <table className="w-full mb-4 text-[15px]">
-                <tbody>
-                  <tr>
-                    <td className="font-poppins" style={{ width: 145 }}>Nama Lengkap</td>
-                    <td>: {dummyData[selectedIdx].nama}</td>
-                  </tr>
-                  <tr>
-                    <td className="font-poppins">Nomor Pengajuan</td>
-                    <td>: {dummyData[selectedIdx].nomorPengajuan}</td>
-                  </tr>
-                  <tr>
-                    <td className="font-poppins">Instansi</td>
-                    <td>: {dummyData[selectedIdx].instansi}</td>
-                  </tr>
-                  <tr>
-                    <td className="font-poppins">Tanggal Kunjungan</td>
-                    <td>: {dummyData[selectedIdx].kunjungan}</td>
-                  </tr>
-                  <tr>
-                    <td className="font-poppins">Email</td>
-                    <td>: {dummyData[selectedIdx].email}</td>
-                  </tr>
-                </tbody>
-              </table>
-              <div className="bg-[#F3F4F7] rounded-[7px] px-4 py-2 font-poppins font-medium text-[#474646] mb-2">
-                Petugas Penyerah : {dummyData[selectedIdx].petugasSerah || "Rafi"}
-              </div>
-              <div className="bg-[#F3F4F7] rounded-[7px] px-4 py-2 font-poppins font-medium text-[#474646] mb-4">
-                Petugas Penerima : Rafi
-              </div>
-              <div className="flex justify-end gap-4 mt-4">
-                <button className="px-7 py-2 rounded-[7px] font-poppins font-medium text-white"
-                  style={{ background: "linear-gradient(90deg, #6A8BB0 0%, #5E5BAD 100%)" }}
-                  onClick={() => setShowPopup(false)}>
+              <DataSection title="Data Penerima Kartu" thick={2}>
+                <Row label="Nama Lengkap" value={dummyData[selectedIdx].nama} />
+                <Row label="Nomor Pengajuan" value={dummyData[selectedIdx].nomorPengajuan} />
+                <Row label="Instansi" value={dummyData[selectedIdx].instansi} />
+                <Row label="Tanggal Kunjungan" value={dummyData[selectedIdx].kunjungan} />
+                <Row label="Email" value={dummyData[selectedIdx].email} />
+              </DataSection>
+
+              <BoxPetugas
+                label="Petugas Penyerah"
+                value={dummyData[selectedIdx].petugasSerah || namaPetugas}
+              />
+              <BoxPetugas label="Petugas Penerima" value={namaPetugas} />
+
+              <div className="flex justify-end gap-3 mt-5">
+                <button
+                  className="px-7 py-2 rounded-[7px] font-poppins font-medium text-white"
+                  style={{ background: "#ACB3BB" }}
+                  onClick={() => setShowPopup(false)}
+                >
                   Kembali
                 </button>
-                <button className="px-7 py-2 rounded-[7px] font-poppins font-medium text-white"
-                  style={{ background: "#007BFF" }}
-                  onClick={handleKonfirmasiTerima}>
+                <button
+                  className="px-7 py-2 rounded-[7px] font-poppins font-medium text-white"
+                  style={{ background: "linear-gradient(90deg, #6A8BB0 0%, #5E5BAD 100%)" }}
+                  onClick={handleKonfirmasiTerima}
+                >
                   Konfirmasi
                 </button>
               </div>
@@ -633,43 +676,26 @@ export default function KartuVisitor() {
         >
           {selectedIdx !== null && (
             <>
-              <div className="bg-[#F3F4F7] rounded-[7px] px-4 py-3 mb-5 font-poppins font-medium text-[#474646]">
-                Data Penerima Kartu
-              </div>
-              <table className="w-full mb-4 text-[15px]">
-                <tbody>
-                  <tr>
-                    <td className="font-poppins" style={{ width: 145 }}>Nama Lengkap</td>
-                    <td>: {dummyData[selectedIdx].nama}</td>
-                  </tr>
-                  <tr>
-                    <td className="font-poppins">Nomor Pengajuan</td>
-                    <td>: {dummyData[selectedIdx].nomorPengajuan}</td>
-                  </tr>
-                  <tr>
-                    <td className="font-poppins">Instansi</td>
-                    <td>: {dummyData[selectedIdx].instansi}</td>
-                  </tr>
-                  <tr>
-                    <td className="font-poppins">Tanggal Kunjungan</td>
-                    <td>: {dummyData[selectedIdx].kunjungan}</td>
-                  </tr>
-                  <tr>
-                    <td className="font-poppins">Email</td>
-                    <td>: {dummyData[selectedIdx].email}</td>
-                  </tr>
-                </tbody>
-              </table>
-              <div className="bg-[#F3F4F7] rounded-[7px] px-4 py-2 font-poppins font-medium text-[#474646] mb-2">
-                Petugas Penyerah : {dummyData[selectedIdx].petugasSerah || "Rafi"}
-              </div>
-              <div className="bg-[#F3F4F7] rounded-[7px] px-4 py-2 font-poppins font-medium text-[#474646] mb-4">
-                Petugas Penerima : Rafi
-              </div>
-              <div className="flex justify-end gap-4 mt-4">
-                <button className="px-7 py-2 rounded-[7px] font-poppins font-medium text-white"
-                  style={{ background: "linear-gradient(90deg, #6A8BB0 0%, #5E5BAD 100%)" }}
-                  onClick={() => setShowPopup(false)}>
+              <DataSection title="Data Penerima Kartu" thick={2}>
+                <Row label="Nama Lengkap" value={dummyData[selectedIdx].nama} />
+                <Row label="Nomor Pengajuan" value={dummyData[selectedIdx].nomorPengajuan} />
+                <Row label="Instansi" value={dummyData[selectedIdx].instansi} />
+                <Row label="Tanggal Kunjungan" value={dummyData[selectedIdx].kunjungan} />
+                <Row label="Email" value={dummyData[selectedIdx].email} />
+              </DataSection>
+
+              <BoxPetugas
+                label="Petugas Penyerah"
+                value={dummyData[selectedIdx].petugasSerah || namaPetugas}
+              />
+              <BoxPetugas label="Petugas Penerima" value={namaPetugas} />
+
+              <div className="flex justify-end gap-3 mt-5">
+                <button
+                  className="px-7 py-2 rounded-[7px] font-poppins font-medium text-white"
+                  style={{ background: "#ACB3BB" }}
+                  onClick={() => setShowPopup(false)}
+                >
                   Kembali
                 </button>
               </div>
@@ -685,60 +711,83 @@ export default function KartuVisitor() {
         >
           {selectedIdx !== null && (
             <>
-              <div className="bg-[#F3F4F7] rounded-[7px] px-4 py-3 mb-5 font-poppins font-medium text-[#474646]">
-                Laporan Kartu
+              <DataSection title="Laporan Kartu" thick={3}>
+                <Row label="Nama Lengkap" value={dummyData[selectedIdx].nama} />
+                <Row label="Instansi" value={dummyData[selectedIdx].instansi} />
+                <Row label="Tanggal Kunjungan" value={formatTanggal(dummyData[selectedIdx].tanggalPinjam)} />
+                <div className="py-2 flex gap-2 text-[14.5px]"
+                     style={{ borderBottom: "1px solid rgba(208,205,205,0.56)" }}>
+                  <div className="min-w-[150px] text-[#474646] font-poppins font-medium">
+                    Kondisi Kartu
+                  </div>
+                  <div className="text-[#474646] font-poppins font-medium">
+                    :{" "}
+                    {readonlyLaporan ? (
+                      <span>{dummyData[selectedIdx].kondisi}</span>
+                    ) : (
+                      <select
+                        className="rounded-[7px] px-3 py-2 font-poppins"
+                        style={{
+                          minWidth: 110,
+                          background: "#F7F7F7",
+                          border: "1px solid rgba(208,205,205,0.56)",
+                        }}
+                        value={laporanKondisi}
+                        onChange={(e) => setLaporanKondisi(e.target.value)}
+                      >
+                        <option value="Baik">Baik</option>
+                        <option value="Hilang">Hilang</option>
+                        <option value="Rusak">Rusak</option>
+                      </select>
+                    )}
+                  </div>
+                </div>
+                <Row label="Petugas" value={namaPetugas} />
+              </DataSection>
+
+              <div className="mb-2 font-poppins font-medium" style={{ color: "#474646" }}>
+                Alasan :
               </div>
-              <table className="w-full mb-4 text-[15px]">
-                <tbody>
-                  <tr><td className="font-poppins" style={{ width: 145 }}>Nama Lengkap</td><td>: {dummyData[selectedIdx].nama}</td></tr>
-                  <tr><td className="font-poppins">Instansi</td><td>: {dummyData[selectedIdx].instansi}</td></tr>
-                  <tr><td className="font-poppins">Tanggal Kunjungan</td><td>: {formatTanggal(dummyData[selectedIdx].tanggalPinjam)}</td></tr>
-                  <tr>
-                    <td className="font-poppins">Kondisi Kartu</td>
-                    <td>
-                      :{" "}
-                      {readonlyLaporan ? (
-                        <span>{dummyData[selectedIdx].kondisi}</span>
-                      ) : (
-                        <select className="rounded px-2 py-1 border font-poppins"
-                          style={{ minWidth: 80 }}
-                          value={laporanKondisi}
-                          onChange={e => setLaporanKondisi(e.target.value)}>
-                          <option value="Baik">Baik</option>
-                          <option value="Hilang">Hilang</option>
-                          <option value="Rusak">Rusak</option>
-                        </select>
-                      )}
-                    </td>
-                  </tr>
-                  <tr><td className="font-poppins">Petugas</td><td>: Rafi</td></tr>
-                </tbody>
-              </table>
-              <div className="mb-3 font-poppins font-medium" style={{ color: "#474646" }}>Alasan :</div>
               <textarea
-                className="w-full rounded-[7px] px-3 py-2 font-poppins mb-3 border"
-                style={{ minHeight: 55, background: "#F7F7F7" }}
+                className="w-full rounded-[7px] px-3 py-2 font-poppins mb-3"
+                style={{
+                  minHeight: 70,
+                  background: "#F7F7F7",
+                  border: "1px solid rgba(208,205,205,0.56)",
+                }}
                 value={laporanAlasan}
-                onChange={e => setLaporanAlasan(e.target.value)}
+                onChange={(e) => setLaporanAlasan(e.target.value)}
                 disabled={readonlyLaporan}
               />
-              <div className="mb-3 font-poppins font-medium" style={{ color: "#474646" }}>Penanganan :</div>
+              <div className="mb-2 font-poppins font-medium" style={{ color: "#474646" }}>
+                Penanganan :
+              </div>
               <textarea
-                className="w-full rounded-[7px] px-3 py-2 font-poppins mb-4 border"
-                style={{ minHeight: 55, background: "#F7F7F7" }}
+                className="w-full rounded-[7px] px-3 py-2 font-poppins mb-4"
+                style={{
+                  minHeight: 70,
+                  background: "#F7F7F7",
+                  border: "1px solid rgba(208,205,205,0.56)",
+                }}
                 value={laporanPenanganan}
-                onChange={e => setLaporanPenanganan(e.target.value)}
+                onChange={(e) => setLaporanPenanganan(e.target.value)}
                 disabled={readonlyLaporan}
               />
-              <div className="flex justify-end gap-4 mt-2">
-                <button className="px-7 py-2 rounded-[7px] font-poppins font-medium text-white"
-                  style={{ background: "linear-gradient(90deg, #6A8BB0 0%, #5E5BAD 100%)" }}
-                  onClick={() => setShowPopup(false)}>
+
+              <div className="flex justify-end gap-3 mt-3">
+                <button
+                  className="px-7 py-2 rounded-[7px] font-poppins font-medium text-white"
+                  style={{ background: "#ACB3BB" }}
+                  onClick={() => setShowPopup(false)}
+                >
                   Kembali
                 </button>
                 {!readonlyLaporan && (
-                  <button className="px-7 py-2 rounded-[7px] font-poppins font-medium text-white"
-                    style={{ background: "#28A745" }}>
+                  <button
+                    className="px-7 py-2 rounded-[7px] font-poppins font-medium text-white"
+                    style={{ background: "linear-gradient(90deg, #6A8BB0 0%, #5E5BAD 100%)" }}
+                    onClick={handleSimpanLaporan}
+                  >
                     Simpan
                   </button>
                 )}
