@@ -710,7 +710,15 @@ export default function KartuVisitor() {
           onClose={() => setShowPopup(false)}
         >
           {selectedIdx !== null && (
-            <>
+            <div
+              style={{
+                maxHeight: 400,
+                overflowY: "auto",
+                paddingRight: 4,
+                // padding bottom to avoid button overlap
+              }}
+              className="custom-scrollbar"
+            >
               <DataSection title="Laporan Kartu" thick={3}>
                 <Row label="Nama Lengkap" value={dummyData[selectedIdx].nama} />
                 <Row label="Instansi" value={dummyData[selectedIdx].instansi} />
@@ -774,7 +782,7 @@ export default function KartuVisitor() {
                 disabled={readonlyLaporan}
               />
 
-              <div className="flex justify-end gap-3 mt-3">
+              <div className="flex justify-end gap-3 mt-3 pb-1">
                 <button
                   className="px-7 py-2 rounded-[7px] font-poppins font-medium text-white"
                   style={{ background: "#ACB3BB" }}
@@ -792,7 +800,7 @@ export default function KartuVisitor() {
                   </button>
                 )}
               </div>
-            </>
+            </div>
           )}
         </Popup>
       </main>
@@ -800,6 +808,18 @@ export default function KartuVisitor() {
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;900&display=swap');
         .font-poppins { font-family: 'Poppins', sans-serif; }
         th, td { vertical-align: middle !important; }
+        /* Custom scrollbar for laporan popup */
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #d6dae2;
+          border-radius: 6px;
+        }
+        .custom-scrollbar {
+          scrollbar-width: thin;
+          scrollbar-color: #d6dae2 #f4f4f4;
+        }
       `}</style>
     </div>
   );

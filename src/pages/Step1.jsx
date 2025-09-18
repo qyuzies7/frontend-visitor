@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { FaUser } from 'react-icons/fa';
 import CardType from '../components/CardType';
+import { useNavigate } from 'react-router-dom';
 
 const Step1 = ({ onNext }) => {
   const [selectedType, setSelectedType] = useState('');
+  const navigate = useNavigate();
 
   const visitorTypes = [
     {
@@ -61,6 +63,11 @@ const Step1 = ({ onNext }) => {
     }
   };
 
+  // Tombol kembali menggunakan useNavigate ke landing page
+  const handleBack = () => {
+    navigate('/');
+  };
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-md border border-gray-300 max-w-4xl mx-auto">
       <h2 className="text-xl font-semibold mb-6 text-blue-800 flex items-center">
@@ -82,7 +89,14 @@ const Step1 = ({ onNext }) => {
           />
         ))}
       </div>
-      <div className="flex justify-end">
+      <div className="flex justify-between">
+        <button
+          type="button"
+          onClick={handleBack}
+          className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition-colors"
+        >
+          Kembali
+        </button>
         <button
           onClick={handleSubmit}
           disabled={!selectedType}

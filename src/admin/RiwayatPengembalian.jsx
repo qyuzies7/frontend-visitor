@@ -253,8 +253,8 @@ export default function RiwayatPengembalian() {
         <div className="w-full max-w-[900px] mx-auto">
           <div className="bg-white rounded-[20px] shadow-md px-0 py-0">
             {/* Search & Export */}
-            <div className="flex items-center px-8 pt-8 pb-3">
-              <div className="flex items-center flex-1 bg-white px-4 py-2 rounded-[11px] border border-[#E4E4E4] mr-3"
+            <div className="flex items-center px-8 pt-8 pb-3 justify-between">
+              <div className="flex items-center flex-1 bg-white px-4 py-2 rounded-[11px] border border-[#E4E4E4]"
                 style={{ maxWidth: 360, background: "#F4F4F4" }}>
                 <Icon icon="ic:round-search" width={28} color="#474646" className="mr-2" />
                 <input
@@ -266,16 +266,18 @@ export default function RiwayatPengembalian() {
                   style={{ fontStyle: "italic", fontWeight: 300 }}
                 />
               </div>
-              <button
-                className="px-5 py-2 rounded-[8px] font-poppins font-medium text-white"
-                style={{
-                  background: "linear-gradient(90deg, #6A8BB0 0%, #5E5BAD 100%)",
-                  fontWeight: 500,
-                }}
-                onClick={exportLaporan}
-              >
-                Export Laporan
-              </button>
+              <div className="flex-1 flex justify-end">
+                <button
+                  className="px-5 py-2 rounded-[8px] font-poppins font-medium text-white"
+                  style={{
+                    background: "linear-gradient(90deg, #6A8BB0 0%, #5E5BAD 100%)",
+                    fontWeight: 500,
+                  }}
+                  onClick={exportLaporan}
+                >
+                  Export Laporan
+                </button>
+              </div>
             </div>
             {/* Table */}
             <div className="overflow-x-auto pb-8 px-8">
@@ -330,7 +332,8 @@ export default function RiwayatPengembalian() {
                             borderRadius: 8,
                             minWidth: 110,
                           }}
-                          onClick={() => navigate("/admin/form-detail")}
+                          onClick={() => navigate("/admin/detail-kerusakan", { state: { nama: row.nama } 
+                          })}
                         >
                           Lihat Detail
                         </button>

@@ -14,7 +14,8 @@ import {
   KartuVisitor, 
   RiwayatPengembalian 
 } from "./admin";
-import FormDetail from "./admin/FormDetail"; // Tambahkan untuk halaman detail visitor
+import FormDetail from "./admin/FormDetail"; // Halaman detail visitor
+import DetailKerusakan from "./admin/DetailKerusakan"; // <--- Tambahkan import ini
 
 function App() {
   return (
@@ -34,6 +35,7 @@ function App() {
         <Route path="/admin/kartu-visitor" element={<KartuVisitor />} />
         <Route path="/admin/riwayat" element={<RiwayatPengembalian />} />
         <Route path="/admin/form-detail" element={<FormDetail />} /> {/* Route detail visitor */}
+        <Route path="/admin/detail-kerusakan" element={<DetailKerusakan />} /> {/* <--- Route baru detail kerusakan */}
       </Routes>
     </Router>
   );
