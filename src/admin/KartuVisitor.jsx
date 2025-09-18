@@ -153,7 +153,6 @@ function Popup({ show, onClose, children, title }) {
   );
 }
 
-/** Seksi data dengan header abu, garis judul, dan garis-baris tipis */
 function DataSection({ title, thick = 2, children }) {
   return (
     <div className="rounded-[10px] overflow-hidden mb-4"
@@ -522,7 +521,7 @@ export default function KartuVisitor() {
                           }}
                           onClick={() => openSerahPopup(idx)}
                         >
-                          Belum diambil
+                          Serahkan Kartu 
                         </button>
                       );
                     } else if (row.aksi === "Serahkan Kartu") {
@@ -541,7 +540,7 @@ export default function KartuVisitor() {
                           }}
                           onClick={() => openTerimaPopup(idx)}
                         >
-                          Serahkan Kartu
+                          Terima Kartu
                         </button>
                       );
                     } else if (row.aksi === "Terima Kartu") {
@@ -560,7 +559,7 @@ export default function KartuVisitor() {
                           }}
                           onClick={() => openTerimaPopupRead(idx)}
                         >
-                          Terima Kartu
+                         Selesai
                         </button>
                       );
                     }

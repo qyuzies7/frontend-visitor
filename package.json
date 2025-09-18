@@ -11,7 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@iconify/react": "^6.0.1",
+    "@iconify/react": "^6.0.2",
     "axios": "^1.11.0",
     "lucide-react": "^0.540.0",
     "react": "^19.1.1",
