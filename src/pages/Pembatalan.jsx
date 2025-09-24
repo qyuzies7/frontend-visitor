@@ -1,8 +1,23 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { cancelApplication } from '../api';
 import './Pembatalan.css';
 import WarningIcon from '../assets/warning.svg';
 
-const PopupPembatalan = ({ onClose, onConfirm }) => {
+const PopupPembatalan = ({ onClose, onConfirm, nomor }) => {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+    const handleCancel = async () => {
+        setLoading(true);
+        setError("");
+        try {
+            await cancelApplication({ reference_number: nomor });
+            onConfirm();
+        } catch (err) {
+            setError("Gagal membatalkan permohonan. Silakan coba lagi.");
+        } finally {
+            setLoading(false);
+        }
+    };
     return (
         <div className="popup-overlay">
             <div className="popup-modal">
@@ -33,9 +48,10 @@ const PopupPembatalan = ({ onClose, onConfirm }) => {
                     <button className="btn-secondary" onClick={onClose}>
                         Kembali
                     </button>
-                    <button className="btn-primary" onClick={onConfirm}> 
-                        Batalkan Permohonan
+                    <button className="btn-primary" onClick={handleCancel} disabled={loading}> 
+                        {loading ? 'Memproses...' : 'Batalkan Permohonan'}
                     </button>
+                    {error && <div className="text-red-500 mt-2">{error}</div>}
                 </div>
             </div>
         </div>

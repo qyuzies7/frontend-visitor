@@ -14,7 +14,7 @@ const CardType = ({ id, label, description, borderColor, iconBgColor, textColor,
         <FaUser className="text-xl" />
       </div>
       <span className={`text-sm font-medium ${textColor}`}>{label}</span>
-      <span className={`text-xs ${textColor} mt-1`}>{description}</span>
+      <span className={`text-xs ${textColor} mt-1 whitespace-pre-line`}>{description}</span>
     </button>
   );
 };

@@ -1,14 +1,96 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { getStations } from '../api';
 import { FaUser } from 'react-icons/fa';
 import FormField from '../components/FormField';
 
 const Step2 = ({ formData, setFormData, nextStep, prevStep, visitType }) => {
   const [errors, setErrors] = useState({});
+  const [stations, setStations] = useState([]);
+
+  // --- Helpers ---
+  const normalizeStations = (raw) => {
+    if (!Array.isArray(raw)) return [];
+
+    return raw.map((it, idx) => {
+      // Jika API hanya mengirim string
+      if (typeof it === 'string') {
+        const text = it.trim();
+        return { id: `station-${idx}`, name: text, value: text };
+      }
+
+      // Coba berbagai kemungkinan nama field untuk "nama stasiun" yang ditampilkan
+      const name =
+        it?.name ??
+        it?.station_name ??
+        it?.nama ??
+        it?.title ??
+        it?.label ??
+        it?.station ??
+        // fallback terakhir supaya tidak kosong
+        String(it?.value ?? it?.code ?? it?.id ?? `Stasiun ${idx + 1}`);
+
+      // Coba berbagai kemungkinan nama field untuk "value"
+      const value =
+        it?.value ??
+        it?.code ??
+        it?.station_code ??
+        it?.station_name ??
+        it?.name ??
+        it?.nama ??
+        name;
+
+      // ID unik untuk key React, prioritaskan id numerik jika ada
+      let id = it?.id;
+      if (typeof id !== 'number') {
+        // fallback ke null jika bukan numerik
+        id = null;
+      }
+      // fallback ke kode jika id numerik tidak ada
+      id = id ?? it?.code ?? it?.station_code ?? it?.value ?? idx;
+
+      return {
+        id,
+        name: String(name).trim(),
+        value: id, // value juga id numerik atau kode
+      };
+    });
+  };
+
+  useEffect(() => {
+    getStations()
+      .then((res) => {
+        const raw = Array.isArray(res?.data)
+          ? res.data
+          : Array.isArray(res?.data?.data)
+          ? res.data.data
+          : [];
+
+        const normalized = normalizeStations(raw);
+
+        if (!normalized.length) {
+          setStations([
+            { id: 'lempuyangan', value: 'Stasiun Lempuyangan', name: 'Stasiun Lempuyangan' },
+            { id: 'yogyakarta', value: 'Stasiun Yogyakarta', name: 'Stasiun Yogyakarta' },
+            { id: 'solo-balapan', value: 'Stasiun Solo Balapan', name: 'Stasiun Solo Balapan' },
+          ]);
+        } else {
+          setStations(normalized);
+        }
+      })
+      .catch(() => {
+        // Fallback lokal kalau API error
+        setStations([
+          { id: 'lempuyangan', value: 'Stasiun Lempuyangan', name: 'Stasiun Lempuyangan' },
+          { id: 'yogyakarta', value: 'Stasiun Yogyakarta', name: 'Stasiun Yogyakarta' },
+          { id: 'solo-balapan', value: 'Stasiun Solo Balapan', name: 'Stasiun Solo Balapan' },
+        ]);
+      });
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
-    setErrors({ ...errors, [name]: '' });
+    setErrors((prev) => ({ ...prev, [name]: '' }));
   };
 
   const validateForm = () => {
@@ -30,9 +112,8 @@ const Step2 = ({ formData, setFormData, nextStep, prevStep, visitType }) => {
     if (formData.visitDate && formData.endDate) {
       const visitDate = new Date(formData.visitDate);
       const endDate = new Date(formData.endDate);
-      const diffDays = (endDate - visitDate) / (1000 * 60 * 60 * 24);
+      const diffDays = Math.round((endDate - visitDate) / (1000 * 60 * 60 * 24)); // dibulatkan ke hari
 
-      // Pastikan endDate tidak sebelum visitDate
       if (diffDays < 0) {
         newErrors.endDate = 'Tanggal selesai kunjungan tidak boleh sebelum tanggal kunjungan';
       } else {
@@ -54,7 +135,7 @@ const Step2 = ({ formData, setFormData, nextStep, prevStep, visitType }) => {
             }
             break;
           case 'pelajar':
-            // Tidak ada batasan ketat untuk pelajar, selama endDate >= visitDate
+            // Tidak ada batasan ketat untuk pelajar/magang selama endDate >= visitDate
             break;
           default:
             break;
@@ -68,9 +149,7 @@ const Step2 = ({ formData, setFormData, nextStep, prevStep, visitType }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (validateForm()) {
-      nextStep();
-    }
+    if (validateForm()) nextStep();
   };
 
   return (
@@ -78,6 +157,7 @@ const Step2 = ({ formData, setFormData, nextStep, prevStep, visitType }) => {
       <h2 className="text-xl font-semibold mb-4 text-blue-600 flex items-center">
         <FaUser className="mr-2 text-blue-600" /> Data Diri Pengunjung
       </h2>
+
       <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormField
           label="Nama Lengkap"
@@ -129,10 +209,16 @@ const Step2 = ({ formData, setFormData, nextStep, prevStep, visitType }) => {
           name="endDate"
           type="date"
           value={formData.endDate}
-          onChange={handleChange}
+          onChange={e => {
+            handleChange(e);
+            // sinkronkan visitEndDate untuk Step4
+            setFormData({ ...formData, endDate: e.target.value, visitEndDate: e.target.value });
+          }}
           error={errors.endDate}
           min={formData.visitDate || new Date().toISOString().split('T')[0]}
         />
+
+        {/* SELECT Stasiun */}
         <FormField
           label="Stasiun Kunjungan"
           name="visitStation"
@@ -142,10 +228,13 @@ const Step2 = ({ formData, setFormData, nextStep, prevStep, visitType }) => {
           error={errors.visitStation}
         >
           <option value="">Pilih Stasiun</option>
-          <option value="Stasiun Lempuyangan">Stasiun Lempuyangan</option>
-          <option value="Stasiun Yogyakarta">Stasiun Yogyakarta</option>
-          <option value="Stasiun Solo Balapan">Stasiun Solo Balapan</option>
+          {stations.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
         </FormField>
+
         <div className="mb-4 md:col-span-2">
           <FormField
             label="Tujuan Kunjungan"
@@ -157,6 +246,7 @@ const Step2 = ({ formData, setFormData, nextStep, prevStep, visitType }) => {
             rows="4"
           />
         </div>
+
         <div className="flex justify-between md:col-span-2">
           <button
             type="button"
