@@ -65,7 +65,7 @@ const Step1 = ({ onNext }) => {
 
   // Tombol kembali menggunakan useNavigate ke landing page
   const handleBack = () => {
-    navigate('/');
+    navigate('/apply/attention');
   };
 
   return (

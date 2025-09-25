@@ -47,6 +47,18 @@
     z-index: 0; /* Pastikan di belakang konten */
   }
 
+  /* Contoh CSS untuk background gambar tugu stasiun */
+  .tugu-stasiun-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: url('/tugu_stasiun.jpg') center center/cover no-repeat;
+    z-index: 0;
+    opacity: 0.30; /* Bisa diganti sesuai keinginan */
+  }
+
   /* Penyesuaian untuk layar kecil */
   @media (max-width: 768px) {
     .kereta-background {

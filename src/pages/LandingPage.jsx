@@ -4,9 +4,11 @@ import Button from '../components/Button';
 
 const LandingPage = () => {
   return (
-    <div className="min-h-screen bg-blue-100 font-sans relative">
-      {/* Gambar Kereta */}
-      <div className="kereta-background"></div>
+    <div className="min-h-screen font-sans relative overflow-hidden">
+      {/* Gambar Tugu Stasiun */}
+      <div className="tugu-stasiun-background"></div>
+      {/* Layer biru transparan */}
+      <div className="absolute inset-0 bg-blue-100/30 z-0"></div>
 
       {/* Logo di Pojok Kiri Atas */}
       <img 
@@ -39,7 +41,7 @@ const LandingPage = () => {
             <p className="text-sm text-gray-600 mb-4">
               Daftarkan kartu visitor untuk mengakses area stasiun dengan proses yang mudah.
             </p>
-            <Link to="/apply">
+            <Link to="/apply/attention">
               <Button className="bg-orange-500 text-white hover:bg-orange-600">
                 DAFTAR SEKARANG
               </Button>

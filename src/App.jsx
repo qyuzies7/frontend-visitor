@@ -1,6 +1,7 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
+import AttentionPage from "./pages/AttentionPage"; // Tambahkan import AttentionPage
 import MultiStepForm from "./pages/MultiStepForm";
 import CekStatus from "./pages/CekStatus";
 import HasilCek from "./pages/HasilCek";
@@ -14,15 +15,17 @@ import {
   KartuVisitor, 
   RiwayatPengembalian 
 } from "./admin";
-import FormDetail from "./admin/FormDetail"; // Halaman detail visitor
-import DetailKerusakan from "./admin/DetailKerusakan"; // <--- Tambahkan import ini
+import FormDetail from "./admin/FormDetail";
+import DetailKerusakan from "./admin/DetailKerusakan";
 
 function App() {
   return (
     <Router>
       <Routes>
         <Route path="/" element={<LandingPage />} />
-        <Route path="/apply" element={<MultiStepForm />} />
+        {/* Routing baru untuk flow pengajuan */}
+        <Route path="/apply/attention" element={<AttentionPage />} />
+        <Route path="/apply/form" element={<MultiStepForm />} />
         <Route path="/status" element={<CekStatus />} />
         <Route path="/status/approved" element={<HasilCek />} />
         <Route path="/status/rejected" element={<HasilTolak />} />
@@ -34,8 +37,8 @@ function App() {
         <Route path="/admin/verifikasi" element={<VerifikasiPersetujuan />} />
         <Route path="/admin/kartu-visitor" element={<KartuVisitor />} />
         <Route path="/admin/riwayat" element={<RiwayatPengembalian />} />
-        <Route path="/admin/form-detail" element={<FormDetail />} /> {/* Route detail visitor */}
-        <Route path="/admin/detail-kerusakan" element={<DetailKerusakan />} /> {/* <--- Route baru detail kerusakan */}
+        <Route path="/admin/form-detail" element={<FormDetail />} />
+        <Route path="/admin/detail-kerusakan" element={<DetailKerusakan />} />
       </Routes>
     </Router>
   );
