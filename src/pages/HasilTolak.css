@@ -131,9 +131,20 @@ body, html {
 
 .date-status-grid-tolak {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  min-width: 0;
 }
+
+.date-status-grid-tolak > div {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
 
 .date-item-tolak, .status-item-tolak {
   display: flex;

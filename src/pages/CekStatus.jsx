@@ -1,4 +1,5 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import { checkStatus } from '../api';
 import { useNavigate, useLocation } from "react-router-dom";
 import logo from "../assets/KAI-logo.png";
 import train from "../assets/Train.png";
@@ -12,19 +13,43 @@ export default function VisitorCardStatus() {
   // Pre-fill input jika ada submissionNumber
   useEffect(() => {
     if (submissionNumber) {
-      document.getElementById("nomor").value = submissionNumber;
+      const el = document.getElementById("nomor");
+      if (el) el.value = submissionNumber;
     }
   }, [submissionNumber]);
 
-  const handleCheckStatus = () => {
-    const nomor = document.getElementById("nomor").value;
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleCheckStatus = async () => {
+    const nomor = document.getElementById("nomor")?.value?.trim();
     if (!nomor) return alert("Masukkan nomor pengajuan!");
-    navigate("/HasilProses", { state: { nomor } });
+    setLoading(true);
+    setError("");
+    try {
+      const res = await checkStatus({ reference_number: nomor });
+
+      // Normalisasi akses data/status
+      const dataRoot = res?.data?.data ?? res?.data ?? {};
+      const status = (dataRoot?.status || "").toLowerCase();
+
+      if (status === "approved" || status === "disetujui") {
+        navigate("/status/approved", { state: { nomor } });
+      } else if (status === "rejected" || status === "ditolak") {
+        navigate("/status/rejected", { state: { nomor } });
+      } else {
+        navigate("/status/processing", { state: { nomor } });
+      }
+    } catch (err) {
+      setError("Nomor pengajuan tidak ditemukan atau server error.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen w-screen bg-gray-100 relative overflow-hidden font-poppins">
-      {/* Background biru turun ke bawah, bentuk mengikuti contoh */}
+      {/* Background biru */}
       <div className="absolute top-0 left-0 w-full h-[340px] z-0 pointer-events-none">
         <svg
           viewBox="0 0 1440 340"
@@ -40,7 +65,6 @@ export default function VisitorCardStatus() {
               <stop offset="1" stopColor="#5E5BAD" />
             </linearGradient>
           </defs>
-          {/* Sisi kiri-kanan turun, tengah datar, turun lebih ke bawah */}
           <path
             d="
               M0,0 
@@ -79,14 +103,15 @@ export default function VisitorCardStatus() {
             <button
               className="bg-gradient-to-r from-[#6A8BB0] to-[#5E5BAD] text-white font-semibold py-3 px-6 rounded-lg w-full cursor-pointer hover:opacity-90 transition-opacity"
               onClick={handleCheckStatus}
+              disabled={loading}
             >
-              CEK STATUS
+              {loading ? 'Memeriksa...' : 'CEK STATUS'}
             </button>
+            {error && <span className="text-red-500 mt-2">{error}</span>}
           </div>
         </div>
       </div>
 
-      {/* Kereta transparan tetap seperti semula */}
       <img
         src={train}
         alt="Kereta"
