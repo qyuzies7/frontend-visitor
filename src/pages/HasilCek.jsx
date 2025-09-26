@@ -95,6 +95,7 @@ const HasilCek = () => {
   useEffect(() => {
     let mounted = true;
     (async () => {
+      
       try {
         const res = await getStations();
         const raw = Array.isArray(res?.data) ? res.data : Array.isArray(res?.data?.data) ? res.data.data : [];
