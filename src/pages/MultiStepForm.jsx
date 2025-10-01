@@ -8,16 +8,28 @@ import Step5 from './Step5';
 import Button from '../components/Button';
 
 const MultiStepForm = ({ initialStep = 1 }) => {
-  const [step, setStep] = useState(initialStep);
-  const [formData, setFormData] = useState({});
+  // Ganti inisialisasi step agar membaca dari localStorage
+  const [step, setStep] = useState(() => {
+    const saved = localStorage.getItem('activeStep');
+    return saved ? Number(saved) : initialStep;
+  });
 
+   const [formData, setFormData] = useState({});
+
+  // Simpan step ke localStorage setiap kali berubah
   const handleNext = (data) => {
     setFormData((prev) => ({ ...prev, ...data }));
-    setStep((prev) => prev + 1);
+    setStep((prev) => {
+      localStorage.setItem('activeStep', prev + 1);
+      return prev + 1;
+    });
   };
 
   const handleBack = () => {
-    setStep((prev) => prev - 1);
+    setStep((prev) => {
+      localStorage.setItem('activeStep', prev - 1);
+      return prev - 1;
+    });
   };
 
   const steps = ['Jenis Kunjungan', 'Data Diri', 'Upload Dokumen', 'Konfirmasi', 'Status'];
