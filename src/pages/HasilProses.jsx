@@ -23,7 +23,6 @@ const HasilProses = () => {
   const [showPopupPembatalan, setShowPopupPembatalan] = useState(false);
   const [showPopupSukses, setShowPopupSukses] = useState(false);
 
-  // === Normalizer WIB ===
   const normalizeDateString = (t) => {
     if (t === null || t === undefined) return '';
     const s = String(t).trim();
@@ -91,7 +90,6 @@ const HasilProses = () => {
     }).format(d);
   };
 
-  // Map stasiun
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -137,7 +135,6 @@ const HasilProses = () => {
     return '-';
   };
 
-  // Ambil detail
   async function fetchDetail(n) {
     try { const r1 = await getVisitorCardDetail(n);            const d1 = r1?.data?.data ?? r1?.data ?? null; if (d1) return d1; } catch {}
     try { const r2 = await getVisitorCardDetail({ reference_number: n }); const d2 = r2?.data?.data ?? r2?.data ?? null; if (d2) return d2; } catch {}
@@ -145,7 +142,6 @@ const HasilProses = () => {
     return null;
   }
 
-  // Fetch awal
   useEffect(() => {
     let mounted = true;
     if (!nomor) {
@@ -173,7 +169,6 @@ const HasilProses = () => {
     return () => { mounted = false; };
   }, [nomor]);
 
-  // (Opsional) Polling 30s
   useEffect(() => {
     if (!nomor) return;
     const id = setInterval(() => {
@@ -213,7 +208,6 @@ const HasilProses = () => {
           </div>
         </div>
 
-        {/* Info Grid */}
         <div className="info-grid">
           <div className="info-item">
             <span className="info-label">NOMOR REFERENSI</span>
@@ -233,7 +227,6 @@ const HasilProses = () => {
           </div>
         </div>
 
-        {/* Detail */}
         <div className="detail-section">
           <div className="detail-header">
             <img src={DetailInfoIcon} alt="detail info icon" className="detail-info-icon" />
@@ -249,12 +242,10 @@ const HasilProses = () => {
               <span className="date-label">Tanggal Berakhir</span>
               <span className="date-value">{fmtDate(data.visit_end_date || data.end_date)}</span>
             </div>
-            {/* JENIS VISITOR – kolom ke-3 */}
             <div className="date-item">
               <span className="date-label">Jenis Visitor</span>
               <span className="date-value">{visitTypeName}</span>
             </div>
-            {/* STATUS – kolom ke-4 (warna TETAP dari CSS) */}
             <div className="status-item">
               <span className="status-label">Status Saat Ini</span>
               <span className="status-value-disetujui">{data.status}</span>
@@ -262,7 +253,6 @@ const HasilProses = () => {
           </div>
         </div>
 
-        {/* Info Box */}
         <div className="approval-note-box">
           <img src={InformationBox} alt='information box' className="information-box-icon" />
           <div className="note-content">
@@ -272,8 +262,7 @@ const HasilProses = () => {
             </p>
           </div>
         </div>
-
-        {/* Buttons */}
+        
         <div className="button-group-tolak">
           <button className="re-apply-button-tolak">
             <img src={CallIcon} alt="Hubungi Keamanan" className="reapply-icon-tolak" />

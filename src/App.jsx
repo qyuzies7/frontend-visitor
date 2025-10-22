@@ -1,7 +1,7 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
-import AttentionPage from "./pages/AttentionPage"; // Tambahkan import AttentionPage
+import AttentionPage from "./pages/AttentionPage";
 import MultiStepForm from "./pages/MultiStepForm";
 import CekStatus from "./pages/CekStatus";
 import HasilCek from "./pages/HasilCek";

@@ -12,13 +12,10 @@ const Step2 = ({ formData, setFormData, nextStep, prevStep, visitType }) => {
     if (!Array.isArray(raw)) return [];
 
     return raw.map((it, idx) => {
-      // Jika API hanya mengirim string
       if (typeof it === 'string') {
         const text = it.trim();
         return { id: `station-${idx}`, name: text, value: text };
       }
-
-      // Coba berbagai kemungkinan nama field untuk "nama stasiun" yang ditampilkan
       const name =
         it?.name ??
         it?.station_name ??
@@ -26,10 +23,7 @@ const Step2 = ({ formData, setFormData, nextStep, prevStep, visitType }) => {
         it?.title ??
         it?.label ??
         it?.station ??
-        // fallback terakhir supaya tidak kosong
         String(it?.value ?? it?.code ?? it?.id ?? `Stasiun ${idx + 1}`);
-
-      // Coba berbagai kemungkinan nama field untuk "value"
       const value =
         it?.value ??
         it?.code ??
@@ -38,20 +32,16 @@ const Step2 = ({ formData, setFormData, nextStep, prevStep, visitType }) => {
         it?.name ??
         it?.nama ??
         name;
-
-      // ID unik untuk key React, prioritaskan id numerik jika ada
       let id = it?.id;
       if (typeof id !== 'number') {
-        // fallback ke null jika bukan numerik
         id = null;
       }
-      // fallback ke kode jika id numerik tidak ada
       id = id ?? it?.code ?? it?.station_code ?? it?.value ?? idx;
 
       return {
         id,
         name: String(name).trim(),
-        value: id, // value juga id numerik atau kode
+        value: id,
       };
     });
   };
@@ -78,7 +68,6 @@ const Step2 = ({ formData, setFormData, nextStep, prevStep, visitType }) => {
         }
       })
       .catch(() => {
-        // Fallback lokal kalau API error
         setStations([
           { id: 'lempuyangan', value: 'Stasiun Lempuyangan', name: 'Stasiun Lempuyangan' },
           { id: 'yogyakarta', value: 'Stasiun Yogyakarta', name: 'Stasiun Yogyakarta' },
@@ -88,8 +77,11 @@ const Step2 = ({ formData, setFormData, nextStep, prevStep, visitType }) => {
   }, []);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    const { name, value, type, checked } = e.target;
+    setFormData({ 
+      ...formData, 
+      [name]: type === "checkbox" ? checked : value 
+    });
     setErrors((prev) => ({ ...prev, [name]: '' }));
   };
 
@@ -97,8 +89,8 @@ const Step2 = ({ formData, setFormData, nextStep, prevStep, visitType }) => {
     const newErrors = {};
     if (!formData.fullName) newErrors.fullName = 'Nama Lengkap wajib diisi';
     if (!formData.company) newErrors.company = 'Instansi/Perusahaan wajib diisi';
-    if (!formData.idNumber) newErrors.idNumber = 'Nomor KTP wajib diisi';
-    else if (!/^\d{16}$/.test(formData.idNumber)) newErrors.idNumber = 'Nomor KTP harus 16 digit';
+    if (!formData.picName) newErrors.picName = 'Nama Penanggung Jawab (PIC) wajib diisi';
+    if (!formData.picPosition) newErrors.picPosition = 'Jabatan Penanggung Jawab wajib diisi';
     if (!formData.phoneNumber) newErrors.phoneNumber = 'Nomor Handphone wajib diisi';
     else if (!/^\d{10,13}$/.test(formData.phoneNumber)) newErrors.phoneNumber = 'Nomor Handphone tidak valid';
     if (!formData.email) newErrors.email = 'Email wajib diisi';
@@ -107,12 +99,11 @@ const Step2 = ({ formData, setFormData, nextStep, prevStep, visitType }) => {
     if (!formData.endDate) newErrors.endDate = 'Tanggal Selesai Kunjungan wajib diisi';
     if (!formData.visitStation) newErrors.visitStation = 'Stasiun Kunjungan wajib diisi';
     if (!formData.visitPurpose) newErrors.visitPurpose = 'Tujuan Kunjungan wajib diisi';
-
-    // Validasi masa berlaku berdasarkan jenis kartu
+    if (!formData.serviceType) newErrors.serviceType = 'Pilih Layanan Pendampingan';
     if (formData.visitDate && formData.endDate) {
       const visitDate = new Date(formData.visitDate);
       const endDate = new Date(formData.endDate);
-      const diffDays = Math.round((endDate - visitDate) / (1000 * 60 * 60 * 24)); // dibulatkan ke hari
+      const diffDays = Math.round((endDate - visitDate) / (1000 * 60 * 60 * 24));
 
       if (diffDays < 0) {
         newErrors.endDate = 'Tanggal selesai kunjungan tidak boleh sebelum tanggal kunjungan';
@@ -135,7 +126,6 @@ const Step2 = ({ formData, setFormData, nextStep, prevStep, visitType }) => {
             }
             break;
           case 'pelajar':
-            // Tidak ada batasan ketat untuk pelajar/magang selama endDate >= visitDate
             break;
           default:
             break;
@@ -174,11 +164,18 @@ const Step2 = ({ formData, setFormData, nextStep, prevStep, visitType }) => {
           error={errors.company}
         />
         <FormField
-          label="Nomor KTP"
-          name="idNumber"
-          value={formData.idNumber}
+          label="Nama Penanggung Jawab (PIC)"
+          name="picName"
+          value={formData.picName}
           onChange={handleChange}
-          error={errors.idNumber}
+          error={errors.picName}
+        />
+        <FormField
+          label="Jabatan Penanggung Jawab"
+          name="picPosition"
+          value={formData.picPosition}
+          onChange={handleChange}
+          error={errors.picPosition}
         />
         <FormField
           label="Nomor Handphone"
@@ -211,7 +208,6 @@ const Step2 = ({ formData, setFormData, nextStep, prevStep, visitType }) => {
           value={formData.endDate}
           onChange={e => {
             handleChange(e);
-            // sinkronkan visitEndDate untuk Step4
             setFormData({ ...formData, endDate: e.target.value, visitEndDate: e.target.value });
           }}
           error={errors.endDate}
@@ -233,6 +229,23 @@ const Step2 = ({ formData, setFormData, nextStep, prevStep, visitType }) => {
               {s.name}
             </option>
           ))}
+        </FormField>
+
+        <FormField
+          label="Layanan Pendampingan"
+          name="serviceType"
+          type="select"
+          value={formData.serviceType || ''}
+          onChange={handleChange}
+          error={errors.serviceType}
+        >
+          <option value="">Pilih Layanan</option>
+          <option value="akses-pintu">Akses Pintu Timur/Selatan saja</option>
+          <option value="vip">Penggunaan Ruang VIP saja</option>
+          <option value="protokol">Pendampingan Protokol saja</option>
+          <option value="akses-pintu-protokol">Akses Pintu + Pendampingan Protokoler</option>
+          <option value="vip-protokol">Ruang VIP + Pendampingan Protokoler</option>
+          <option value="akses-pintu-vip-protokol">Akses Pintu + Ruang VIP + Pendampingan Protokoler</option>
         </FormField>
 
         <div className="mb-4 md:col-span-2">

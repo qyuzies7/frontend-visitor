@@ -5,22 +5,26 @@ import Button from '../components/Button';
 const LandingPage = () => {
   return (
     <div className="min-h-screen font-sans relative overflow-hidden">
-      {/* Gambar Tugu Stasiun */}
       <div className="tugu-stasiun-background"></div>
-      {/* Layer biru transparan */}
       <div className="absolute inset-0 bg-blue-100/30 z-0"></div>
-
-      {/* Logo di Pojok Kiri Atas */}
-      <img 
-        src="/logo-kai.png" 
-        alt="KAI Logo" 
-        className="w-24 h-auto md:w-28 lg:w-28 ml-6 z-10"
-        onError={(e) => { e.target.src = 'https://via.placeholder.com/80'; }}
-      />
+      <div className="w-full flex justify-between items-start px-6 pt-2 relative z-20">
+        <img
+          src="/danantara_indonesia.png"
+          alt="Danantara Logo"
+          className="w-32 h-auto mt-4 md:mt-4 lg:mt-4"
+          style={{ pointerEvents: 'none' }}
+          onError={(e) => { e.target.src = 'https://via.placeholder.com/120x40'; }}
+        />
+        <img 
+          src="/logo-kai.png" 
+          alt="KAI Logo" 
+          className="w-20 h-auto -mt-2 md:w-24 md:-mt-2 lg:w-24"
+          style={{ pointerEvents: 'none' }}
+          onError={(e) => { e.target.src = 'https://via.placeholder.com/80'; }}
+        />
+      </div>
       
-      {/* Kontainer untuk konten */}
       <div className="px-4 pb-4 relative z-10">
-        {/* Judul dan Deskripsi */}
         <div className="mt-1 md:mt-2 text-center">
           <h1 className="text-2xl md:text-4xl font-bold text-black bg-gradient-to-r from-[#6A8BB0] to-[#5E5BAD] rounded-[40px] p-2 md:p-4 px-6 md:px-8 inline-block shadow-md">
             Pengajuan Kartu Visitor
@@ -30,7 +34,6 @@ const LandingPage = () => {
           </p>
         </div>
 
-        {/* Dua Kartu */}
         <div className="flex flex-col md:flex-row justify-center gap-8 md:gap-10 max-w-4xl mx-auto">
           {/* Kartu Ajukan Permohonan */}
           <div className="bg-white rounded-2xl border-orange-500 p-4 flex flex-col items-center text-center shadow-lg hover:shadow-xl hover:scale-105 transition duration-300 ease-in-out w-full md:w-96 z-10" style={{ borderWidth: '3px' }}>

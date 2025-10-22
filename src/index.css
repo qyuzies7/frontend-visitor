@@ -1,5 +1,3 @@
-/* index.css */
-
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Poppins:wght@500;600;700&display=swap');
 
 .font-montserrat {
@@ -25,29 +23,13 @@
 
 @layer utilities {
   .no-scrollbar::-webkit-scrollbar {
-    display: none; /* Chrome, Safari, Opera */
+    display: none;
   }
   .no-scrollbar {
-    -ms-overflow-style: none; /* IE, Edge */
-    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; 
+    scrollbar-width: none; 
   }
 
-  /* Gaya untuk gambar kereta */
-  .kereta-background {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 550px; /* Dipertahankan besar */
-    background-image: url('/train-bg.png'); /* Nama file gambar */
-    background-size: auto 100%; /* Tinggi penuh, lebar menyesuaikan */
-    background-repeat: no-repeat;
-    background-position: 10% 40px; /* Geser lebih ke bawah (dari 20px ke 40px) */
-    opacity: 0.3; /* Transparan */
-    z-index: 0; /* Pastikan di belakang konten */
-  }
-
-  /* Contoh CSS untuk background gambar tugu stasiun */
   .tugu-stasiun-background {
     position: absolute;
     top: 0;
@@ -56,23 +38,6 @@
     height: 100vh;
     background: url('/tugu_stasiun.jpg') center center/cover no-repeat;
     z-index: 0;
-    opacity: 0.30; /* Bisa diganti sesuai keinginan */
-  }
-
-  /* Penyesuaian untuk layar kecil */
-  @media (max-width: 768px) {
-    .kereta-background {
-      height: 350px; /* Dipertahankan besar */
-      background-size: auto 90%; /* Sedikit lebih kecil untuk ponsel */
-      background-position: 10% 30px; /* Geser lebih ke bawah (dari 15px ke 30px) */
-    }
-  }
-
-  @media (max-width: 480px) {
-    .kereta-background {
-      height: 250px; /* Dipertahankan besar */
-      background-size: auto 85%; /* Menyesuaikan untuk layar sangat kecil */
-      background-position: 10% 20px; /* Geser lebih ke bawah (dari 10px ke 20px) */
-    }
+    opacity: 0.47;
   }
 }

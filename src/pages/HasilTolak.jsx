@@ -14,8 +14,6 @@ const HasilTolak = () => {
   const [stationsMap, setStationsMap] = useState(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
-  // === Normalizer WIB ===
   const normalizeDateString = (t) => {
     if (t === null || t === undefined) return '';
     const s = String(t).trim();
@@ -83,7 +81,6 @@ const HasilTolak = () => {
     }).format(d);
   };
 
-  // Map stasiun
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -129,7 +126,6 @@ const HasilTolak = () => {
     return '-';
   };
 
-  // Ambil detail
   async function fetchDetail(n) {
     try { const r1 = await getVisitorCardDetail(n);            const d1 = r1?.data?.data ?? r1?.data ?? null; if (d1) return d1; } catch {}
     try { const r2 = await getVisitorCardDetail({ reference_number: n }); const d2 = r2?.data?.data ?? r2?.data ?? null; if (d2) return d2; } catch {}
@@ -137,7 +133,6 @@ const HasilTolak = () => {
     return null;
   }
 
-  // Fetch awal
   useEffect(() => {
     let mounted = true;
     if (!nomor) {
@@ -165,7 +160,6 @@ const HasilTolak = () => {
     return () => { mounted = false; };
   }, [nomor]);
 
-  // (Opsional) Polling 30s
   useEffect(() => {
     if (!nomor) return;
     const id = setInterval(() => {
@@ -201,7 +195,6 @@ const HasilTolak = () => {
           </div>
         </div>
 
-        {/* Info Grid */}
         <div className="info-grid-tolak">
           <div className="info-item-tolak">
             <span className="info-label-tolak">NOMOR REFERENSI</span>
@@ -237,12 +230,10 @@ const HasilTolak = () => {
               <span className="date-label-tolak">Tanggal Berakhir</span>
               <span className="date-value-tolak">{fmtDate(data.visit_end_date || data.end_date)}</span>
             </div>
-            {/* JENIS VISITOR – kolom ke-3 */}
             <div className="date-item-tolak">
               <span className="date-label-tolak">Jenis Visitor</span>
               <span className="date-value-tolak">{visitTypeName}</span>
             </div>
-            {/* STATUS – kolom ke-4 (warna TETAP dari CSS) */}
             <div className="status-item-tolak">
               <span className="status-label-tolak">Status Saat Ini</span>
               <span className="status-value-tolak">{data.status || 'rejected'}</span>
@@ -250,7 +241,6 @@ const HasilTolak = () => {
           </div>
         </div>
 
-        {/* Rejection Note */}
         <div className="rejection-note-box-tolak">
           <div className="note-content-tolak">
             <h5>Alasan Penolakan</h5>
@@ -258,7 +248,6 @@ const HasilTolak = () => {
           </div>
         </div>
 
-        {/* CTA */}
         <div className="button-group-tolak">
           <button className="re-apply-button-tolak">Ajukan Ulang</button>
         </div>

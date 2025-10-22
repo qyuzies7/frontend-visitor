@@ -1,16 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
-/* Basic setup */
 html, body {
   margin: 0;
   padding: 0;
   font-family: 'Poppins', sans-serif;
   background-color: #EBF1F8;
-  min-height: 100vh; /* Menggunakan min-height untuk memastikan halaman setidaknya setinggi viewport */
+  min-height: 100vh; 
   overflow: auto;
 }
 
-/* Page wrapper untuk centering sempurna */
 .page-wrapper-hasil {
   display: flex;
   justify-content: center;
@@ -20,7 +18,6 @@ html, body {
   width: 100%;
 }
 
-/* Main card container */
 .main-card-container {
   background-color: #fff;
   border-radius: 8px;
@@ -29,10 +26,9 @@ html, body {
   width: 100%;
   max-width: 1400px;
   border-top: 5px solid #28a745; 
-  margin: auto; /* Memastikan container berada di tengah secara horizontal */
+  margin: auto;
 }
 
-/* --- Status Header Section --- */
 .status-header {
   display: flex;
   align-items: center;
@@ -66,7 +62,6 @@ html, body {
   margin-top: 5px;
 }
 
-/* --- Info Grid Section --- */
 .info-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -96,7 +91,6 @@ html, body {
   color: #222;
 }
 
-/* --- Detail Section --- */
 .detail-section {
   margin-bottom: 30px;
 }
@@ -207,7 +201,6 @@ html, body {
   line-height: 1.5;
 }
 
-/* --- Contact Button --- */
 .contact-button {
   background-color: #fff;
   color: #3b82f6;
@@ -234,7 +227,6 @@ html, body {
   height: 16px;
 }
 
-/* --- Responsive adjustments --- */
 @media (max-width: 768px) {
   .info-grid, .date-status-grid {
     grid-template-columns: 1fr;

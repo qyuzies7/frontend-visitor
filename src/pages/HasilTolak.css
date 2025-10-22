@@ -1,6 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
-/* Main Body & Page Wrapper */
 body, html {
   margin: 0;
   padding: 0;
@@ -19,7 +18,6 @@ body, html {
   width: 100%;
 }
 
-/* Card Container */
 .main-card-container-tolak {
   background-color: #fff;
   border-radius: 8px;
@@ -31,7 +29,6 @@ body, html {
   margin: auto;
 }
 
-/* Status Header Section */
 .status-header-tolak {
   display: flex;
   align-items: center;
@@ -65,13 +62,12 @@ body, html {
   margin-top: 5px;
 }
 
-/* Info Grid Section */
 .info-grid-tolak {
-  display: flex; /* Use flexbox */
+  display: flex; 
   gap: 20px;
   margin-bottom: 30px;
   align-items: stretch; /* Makes all items the same height */
-  flex-wrap: wrap; /* Allows items to wrap on smaller screens */
+  flex-wrap: wrap; 
 }
 
 .info-item-tolak {
@@ -80,7 +76,7 @@ body, html {
   padding: 15px;
   background-color: #f8f9fa;
   border-radius: 8px;
-  flex: 1; /* Allows the item to grow and shrink */
+  flex: 1;
 }
 
 .info-label-tolak {
@@ -97,7 +93,6 @@ body, html {
   color: #222;
 }
 
-/* Detail Section */
 .detail-section-tolak {
   margin-bottom: 30px;
 }
@@ -251,10 +246,9 @@ body, html {
   border-color: #C83804;
 }
 
-/* Responsive adjustments */
 @media (max-width: 768px) {
   .info-grid-tolak {
-    flex-direction: column; /* Stacks items vertically on small screens */
+    flex-direction: column; 
   }
   .date-status-grid-tolak {
     grid-template-columns: 1fr;

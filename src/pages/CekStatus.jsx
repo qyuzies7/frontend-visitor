@@ -10,7 +10,6 @@ export default function VisitorCardStatus() {
   const location = useLocation();
   const submissionNumber = location.state?.submissionNumber || "";
 
-  // Pre-fill input jika ada submissionNumber
   useEffect(() => {
     if (submissionNumber) {
       const el = document.getElementById("nomor");
@@ -29,7 +28,6 @@ export default function VisitorCardStatus() {
     try {
       const res = await checkStatus({ reference_number: nomor });
 
-      // Normalisasi akses data/status
       const dataRoot = res?.data?.data ?? res?.data ?? {};
       const status = (dataRoot?.status || "").toLowerCase();
 
@@ -49,7 +47,6 @@ export default function VisitorCardStatus() {
 
   return (
     <div className="min-h-screen w-screen bg-gray-100 relative overflow-hidden font-poppins">
-      {/* Background biru */}
       <div className="absolute top-0 left-0 w-full h-[340px] z-0 pointer-events-none">
         <svg
           viewBox="0 0 1440 340"

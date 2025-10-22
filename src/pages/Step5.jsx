@@ -6,7 +6,6 @@ const Step5 = ({ submissionNumber }) => {
   const navigate = useNavigate();
 
   const handleCheckStatus = () => {
-    // Navigasi ke halaman cek status, kirim sebagai submissionNumber untuk konsistensi
     navigate('/status', { 
       state: { 
         submissionNumber: submissionNumber,
@@ -38,8 +37,8 @@ const Step5 = ({ submissionNumber }) => {
       <div className="text-left mb-6 max-w-md mx-auto">
         <h4 className="font-semibold text-sm mb-3 text-center">Informasi Penting:</h4>
         <ul className="list-disc list-inside text-gray-700 text-sm space-y-2">
-          <li>Notifikasi status akan dikirim melalui Email/WhatsApp</li>
           <li>Simpan nomor pengajuan untuk melacak status permohonan</li>
+          <li>Cek status secara berkala untuk melihat status permohonan</li>
           <li>Hubungi (0274) 563-456 jika ada pertanyaan mendesak</li>
         </ul>
       </div>

@@ -16,7 +16,6 @@ const AttentionPage = () => {
   };
 
   return (
-    // Scroll di luar kotak attention saja
     <div className="min-h-screen bg-blue-100 font-sans flex items-center justify-center overflow-auto">
       <div
         className="rounded-lg shadow-md border border-gray-300 max-w-2xl w-full flex flex-col items-center bg-white"
@@ -83,7 +82,6 @@ const AttentionPage = () => {
                 <li>Pendamping lain hanya sampai Zona 2.</li>
               </ul>
             </div>
-            {/* Persetujuan berada di dalam area konten */}
             <div className="mt-8 flex items-start gap-3">
               <input
                 type="checkbox"
@@ -97,7 +95,6 @@ const AttentionPage = () => {
                 serta bersedia mematuhi SOP Pelayanan Tamu Protokoler Stasiun Yogyakarta.
               </label>
             </div>
-            {/* Tombol mengikuti scroll, tidak mengambang */}
             <div className="w-full flex justify-between mt-8 mb-2">
               <button
                 type="button"

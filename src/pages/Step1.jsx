@@ -7,8 +7,6 @@ import { getVisitTypes } from '../api';
 const Step1 = ({ onNext }) => {
   const [selectedCode, setSelectedCode] = useState('');
   const navigate = useNavigate();
-
-  // ID numerik disesuaikan dengan isi tabel visit_types di DB-mu
   const [visitorTypes, setVisitorTypes] = useState([
     {
       id: 1,
@@ -62,7 +60,6 @@ const Step1 = ({ onNext }) => {
     },
   ]);
 
-  // helper buat ambil label/description dari berbagai kemungkinan field
   const pickText = (item, keys) => {
     for (const k of keys) {
       const v = item?.[k];
@@ -71,7 +68,6 @@ const Step1 = ({ onNext }) => {
     return undefined;
   };
 
-  // normalisasi kode dari API (biar ketemu dengan 'code' default)
   const normalizeCode = (item) => {
     const raw =
       item?.code ??
@@ -100,7 +96,6 @@ const Step1 = ({ onNext }) => {
           ? res.data.data
           : [];
 
-        // Bangun map by normalized code -> { id (numeric?) , label, description }
         const m = new Map();
         api.forEach((it) => {
           const code = normalizeCode(it);
@@ -115,7 +110,6 @@ const Step1 = ({ onNext }) => {
           });
         });
 
-        // Merge ke default: ID numerik default tetap dipakai kalau API tidak jelas
         setVisitorTypes((prev) =>
           prev.map((def) => {
             const hit = m.get(def.code);
@@ -129,7 +123,6 @@ const Step1 = ({ onNext }) => {
         );
       })
       .catch(() => {
-        // Abaikan → tetap pakai default
       });
   }, []);
 

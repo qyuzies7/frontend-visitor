@@ -10,8 +10,7 @@ const Step4 = ({ formData, prevStep, nextStep }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!agreed) return;
-    
-    // Generate submission number and timestamp
+
     const generatedNumber = 'VST-' + Math.floor(Math.random() * 900000 + 100000);
     const now = new Date().toISOString();
     
@@ -19,19 +18,11 @@ const Step4 = ({ formData, prevStep, nextStep }) => {
     setError("");
 
     try {
-      // Map field dari formData -> payload backend
       const mapFields = {
-        // ID numerik visit type (sudah dibetulkan di Step1)
         jenisKunjungan: 'visit_type_id',
-
-        // Tanggal
         visitDate: 'visit_start_date',
         visitEndDate: 'visit_end_date',
-
-        // Stasiun (pakai ID numerik, sudah diset di Step2)
         visitStation: 'station_id',
-
-        // Lain-lain
         visitPurpose: 'visit_purpose',
         fullName: 'full_name',
         idNumber: 'identity_number',
@@ -39,17 +30,23 @@ const Step4 = ({ formData, prevStep, nextStep }) => {
         phoneNumber: 'phone_number',
         email: 'email',
         document: 'document',
+
+        // Step 2 Akses Pintu 
+        accessDoor: 'access_door',
+        accessTime: 'access_time',
+        accessPurpose: 'access_purpose',
+        protokolerCount: 'protokoler_count',
+        vehicleType: 'vehicle_type',
+        vehiclePlate: 'vehicle_plate',
+        needProtokolerEscort: 'need_protokoler_escort',
+        serviceType: 'service_type',
       };
 
       const payload = {};
       Object.entries(formData).forEach(([k, v]) => {
         if (mapFields[k] !== undefined) payload[mapFields[k]] = v;
       });
-
-      // Wajib: kirim rejection_reason sebagai string kosong (bukan null)
       payload.rejection_reason = '';
-
-      // (Opsional) mapping kode stasiun -> id angka, kalau value masih string code
       const stationCodeToId = { YK: 1, LPN: 2 /* ... */ };
       if (payload.station_id && typeof payload.station_id === 'string') {
         payload.station_id = stationCodeToId[payload.station_id] || payload.station_id;
@@ -59,11 +56,10 @@ const Step4 = ({ formData, prevStep, nextStep }) => {
       if (payload.document instanceof File) {
         const fd = new FormData();
         Object.entries(payload).forEach(([k, v]) => {
-          fd.append(k, v ?? ''); // pastikan string, tidak null
+          fd.append(k, v ?? '');
         });
         response = await submitVisitorCard(fd);
       } else {
-        // JSON body – pastikan tidak ada null di rejection_reason
         response = await submitVisitorCard(payload);
       }
 
@@ -71,9 +67,7 @@ const Step4 = ({ formData, prevStep, nextStep }) => {
         response?.data?.reference_number ||
         response?.data?.nomor_pengajuan ||
         response?.data?.id ||
-        generatedNumber; // fallback ke generated number jika response tidak ada
-
-      // Kirim data dengan submission number dan timestamp ke nextStep
+        generatedNumber;
       nextStep({ 
         ...formData, 
         submissionNumber: nomor, 
@@ -89,6 +83,9 @@ const Step4 = ({ formData, prevStep, nextStep }) => {
       setLoading(false);
     }
   };
+
+  // Helper tampilkan detail akses pintu jika ada
+  const showAksesPintu = formData.accessDoor || formData.accessTime || formData.accessPurpose || formData.protokolerCount || formData.vehicleType || formData.vehiclePlate || typeof formData.needProtokolerEscort !== 'undefined';
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md border border-gray-300 max-w-4xl mx-auto">
@@ -110,25 +107,40 @@ const Step4 = ({ formData, prevStep, nextStep }) => {
             <p className="text-sm text-gray-600"><strong>Tanggal Selesai :</strong> {formData.visitEndDate || formData.endDate}</p>
             <p className="text-sm text-gray-600"><strong>Stasiun Kunjungan :</strong> {formData.visitStation}</p>
             <p className="text-sm text-gray-600"><strong>Tujuan :</strong> {formData.visitPurpose}</p>
+            {formData.serviceType && (
+              <p className="text-sm text-gray-600"><strong>Layanan Pendampingan :</strong> {formData.serviceType}</p>
+            )}
           </div>
         </div>
 
         {/* Data Pribadi */}
         <div className="p-4">
           <h3 className="font-semibold text-gray-800 mb-4 border-b pb-2">Data Pribadi</h3>
-          <p className="text-sm text-gray-600"><strong>Nama :</strong> {formData.fullName}</p>
-          <p className="text-sm text-gray-600"><strong>Nomor KTP :</strong> {formData.idNumber}</p>
+          <p className="text-sm text-gray-600"><strong>Nama :</strong> {formData.fullName}</p> 
           <p className="text-sm text-gray-600"><strong>Instansi :</strong> {formData.company}</p>
           <p className="text-sm text-gray-600"><strong>Nomor Hp :</strong> {formData.phoneNumber}</p>
           <p className="text-sm text-gray-600"><strong>Email :</strong> {formData.email}</p>
         </div>
 
-        {/* Dokumen Upload */}
+        {/* Dokumen Upload & Akses Pintu (jika ada) */}
         <div className="p-4">
           <h3 className="font-semibold text-gray-800 mb-4 border-b pb-2">Dokumen Upload</h3>
           <p className="text-sm text-gray-600">
             <strong>Surat Tugas :</strong> {formData.document ? <span className="text-green-600 font-medium">Sudah diupload</span> : '-'}
           </p>
+
+          {showAksesPintu && (
+            <div className="mt-6 border-t pt-4">
+              <h3 className="font-semibold text-gray-800 mb-2">Detail Permohonan Akses Pintu</h3>
+              <p className="text-sm text-gray-600"><strong>Pintu :</strong> {formData.accessDoor || '-'}</p>
+              <p className="text-sm text-gray-600"><strong>Waktu Akses :</strong> {formData.accessTime || '-'}</p>
+              <p className="text-sm text-gray-600"><strong>Tujuan Akses :</strong> {formData.accessPurpose || '-'}</p>
+              <p className="text-sm text-gray-600"><strong>Jumlah Pendamping Protokoler :</strong> {formData.protokolerCount || '-'}</p>
+              <p className="text-sm text-gray-600"><strong>Jumlah & Jenis Kendaraan :</strong> {formData.vehicleType || '-'}</p>
+              <p className="text-sm text-gray-600"><strong>Nomor Polisi Kendaraan :</strong> {formData.vehiclePlate || '-'}</p>
+              <p className="text-sm text-gray-600"><strong>Butuh Pendampingan Protokoler:</strong> {typeof formData.needProtokolerEscort !== 'undefined' ? (formData.needProtokolerEscort === 'ya' ? 'Ya' : 'Tidak') : '-'}</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -141,7 +153,7 @@ const Step4 = ({ formData, prevStep, nextStep }) => {
           className="mr-2"
         />
         <label htmlFor="agreement" className="text-sm text-gray-700">
-          Saya menyetujui <a href="#" className="text-blue-600 hover:underline">syarat dan ketentuan</a> serta <a href="#" className="text-blue-600 hover:underline">kebijakan privasi data</a>
+          Saya menyatakan data di atas benar dan bersedia mematuhi SOP Pelayanan Stasiun Yogyakarta.
         </label>
       </div>
 
@@ -161,5 +173,6 @@ const Step4 = ({ formData, prevStep, nextStep }) => {
     </div>
   );
 };
+
 
 export default Step4;
