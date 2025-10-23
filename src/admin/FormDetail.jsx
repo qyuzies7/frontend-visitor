@@ -1,222 +1,409 @@
+// src/admin/FormDetail.jsx
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import kaiLogo from "../assets/KAI-logo.png";
 
-// Dummy data awal
-const initialData = {
-  nama: "Azida Kautsar Milla",
-  instansi: "Politeknik Elektronika Negeri Surabaya",
-  noKtp: "3506132436454600",
-  email: "azida@gmail.com",
-  tanggal: "08 Agustus 2025",
-  dokumen: "Proposal_Magang.pdf",
-  handphone: "081324252611",
-  stasiun: "Stasiun Lempuyangan",
-  selesaiKunjungan: "11 Agustus 2025",
-  noPengajuan: "VST-2025-12345677",
-  tujuan: "Melakukan observasi dan kegiatan magang di PT KAI",
-};
+// API
+import {
+  getVerificationDetail,
+  approveVerification,
+  rejectVerification,
+  ORIGIN,
+  fetchDocumentBlob,
+  filenameFromHeaders,
+} from "../api";
 
-const adminName = "Rafi";
-const STATUS_KEY = "status_pengajuan_azida";
-const CATATAN_KEY = "catatan_pengajuan_azida";
+/* =========================
+ * Helpers
+ * ========================= */
+
+function normalizeStatusLabel(s) {
+  const v = (s || "").toString().toLowerCase();
+  if (v === "approved" || v === "disetujui") return "Disetujui";
+  if (v === "rejected" || v === "ditolak") return "Ditolak";
+  return "Menunggu";
+}
+
+function formatTanggalIndo(val) {
+  if (!val) return "-";
+  const d = new Date(val);
+  if (isNaN(d)) return val;
+  const months = [
+    "Januari","Februari","Maret","April","Mei","Juni",
+    "Juli","Agustus","September","Oktober","November","Desember",
+  ];
+  return `${String(d.getDate()).padStart(2, "0")} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+function getFilenameFromUrl(url, fallback = "-") {
+  if (!url) return fallback;
+  try {
+    const u = new URL(url);
+    const last = u.pathname.split("/").filter(Boolean).pop();
+    return decodeURIComponent(last || fallback);
+  } catch {
+    const last = String(url).split("/").filter(Boolean).pop();
+    return decodeURIComponent(last || fallback);
+  }
+}
+
+function toFileURL(v) {
+  if (!v) return "";
+  if (/^https?:\/\//i.test(v)) return v;
+  const clean = v.replace(/^\/+/, "");
+  const finalPath =
+    clean.startsWith("storage/") || clean.startsWith("uploads/")
+      ? clean
+      : `storage/${clean}`;
+  return `${ORIGIN.replace(/\/+$/,"")}/${finalPath}`;
+}
+
+const adminNameFromLS =
+  localStorage.getItem("adminName") ||
+  localStorage.getItem("namaPetugas") ||
+  "Admin";
+
+/* =========================
+ * Small Modal (popup kecil)
+ * ========================= */
+function SmallModal({ open, onClose, title, icon, iconColor = "#fff", children }) {
+  if (!open) return null;
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-20"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-[14px] shadow-lg w-[95%] max-w-[520px] min-w-[360px] relative"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div
+          className="flex items-center justify-between px-6 py-4 rounded-t-[14px]"
+          style={{ background: "linear-gradient(90deg, #6A8BB0 0%, #5E5BAD 100%)" }}
+        >
+          <div className="flex items-center gap-3">
+            {icon ? <Icon icon={icon} width={48} height={48} color={iconColor} /> : null}
+            <span className="font-poppins font-semibold text-white text-[18px]">
+              {title}
+            </span>
+          </div>
+          {/* Close (X) DIHILANGKAN SESUAI PERMINTAAN */}
+        </div>
+        <div className="px-6 py-6">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+/* =========================
+ * Component
+ * ========================= */
 
 export default function FormDetail() {
-  // Ambil status dan catatan dari l
-  const getStatusLocal = () => localStorage.getItem(STATUS_KEY) || "Menunggu Persetujuan";
-  const getCatatanLocal = () => localStorage.getItem(CATATAN_KEY) || "";
+  const navigate = useNavigate();
+  const { reference } = useParams();
 
   const [showReject, setShowReject] = useState(false);
   const [showAccept, setShowAccept] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [acceptNote, setAcceptNote] = useState("");
-  const [status, setStatus] = useState(getStatusLocal());
-  const [catatan, setCatatan] = useState(getCatatanLocal());
-  const navigate = useNavigate();
+  const [submitting, setSubmitting] = useState(false);
 
-  // Sinkron status & catatan dengan localStorage (reload/masuk kembali tetap update)
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState("");
+
+  const [detail, setDetail] = useState({
+    nama: "-",
+    instansi: "-",
+    noKtp: "-",
+    email: "-",
+    tanggal: "-",
+    dokumenNama: "-",
+    dokumenUrl: "",
+    dokumenPath: "",
+    handphone: "-",
+    stasiun: "-",
+    selesaiKunjungan: "-",
+    noPengajuan: reference || "-",
+    tujuan: "-",
+    statusLabel: "Menunggu",
+    catatan: "",
+    _filenameResolved: false,
+  });
+
   useEffect(() => {
-    setStatus(getStatusLocal());
-    setCatatan(getCatatanLocal());
-  }, []);
+    let mounted = true;
 
-  // Update localStorage setiap kali status/catatan berubah
+    async function fetchDetail() {
+      if (!reference) {
+        setErr("Reference number tidak ditemukan.");
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setErr("");
+      try {
+        const res = await getVerificationDetail({
+          reference_number: reference,
+          reference,
+        });
+
+        const raw = res?.data?.data || res?.data || {};
+
+        const nama = raw.applicant_name || raw.full_name || raw.name || "-";
+        const instansi =
+          raw.organization || raw.company || raw.institution || raw.agency || "-";
+        const noKtp = raw.national_id || raw.nik || "-";
+        const email = raw.email || raw.applicant_email || "-";
+        const tanggal = formatTanggalIndo(
+          raw.visit_date || raw.visit_start_date || raw.date
+        );
+        const selesaiKunjungan = formatTanggalIndo(
+          raw.visit_end_date || raw.end_date || raw.due_date
+        );
+        const noPengajuan =
+          raw.reference_number || raw.reference || raw.ref_no || raw.ref || reference || "-";
+        const handphone = raw.phone || raw.phone_number || raw.applicant_phone || "-";
+        const stasiun =
+          typeof raw.station === "object"
+            ? raw.station?.name || "-"
+            : raw.station_name || raw.station || "-";
+        const tujuan =
+          raw.purpose || raw.visit_purpose || raw.reason || raw.description || "-";
+
+        const docRaw =
+          raw.document_url ||
+          raw.attachment_url ||
+          raw.document_path ||
+          raw.document ||
+          (Array.isArray(raw.documents) ? (raw.documents[0]?.url || raw.documents[0]) : "");
+
+        const dokumenUrl = docRaw ? toFileURL(docRaw) : "";
+        const dokumenNama =
+          raw.document_original_name || raw.original_name || getFilenameFromUrl(docRaw, "-");
+
+        const statusLabel = normalizeStatusLabel(raw.status);
+        const catatan = raw.approval_note || raw.note || raw.rejection_reason || "";
+
+        if (!mounted) return;
+        setDetail({
+          nama,
+          instansi,
+          noKtp,
+          email,
+          tanggal,
+          dokumenNama,
+          dokumenUrl,
+          dokumenPath: docRaw || "",
+          handphone,
+          stasiun,
+          selesaiKunjungan,
+          noPengajuan,
+          tujuan,
+          statusLabel,
+          catatan,
+          _filenameResolved: false,
+        });
+      } catch (e) {
+        setErr(e?.response?.data?.message || e?.message || "Gagal memuat detail.");
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+
+    fetchDetail();
+    return () => { mounted = false; };
+  }, [reference]);
+
   useEffect(() => {
-    localStorage.setItem(STATUS_KEY, status);
-    localStorage.setItem(CATATAN_KEY, catatan);
-  }, [status, catatan]);
+    if (!detail.dokumenUrl || detail._filenameResolved) return;
 
-  // Badge status
+    (async () => {
+      try {
+        const resp = await fetchDocumentBlob(detail.dokumenPath || detail.dokumenUrl, {
+          timeout: 20000,
+        });
+        const nameFromHeader = filenameFromHeaders(resp, detail.dokumenNama);
+        if (nameFromHeader && nameFromHeader !== detail.dokumenNama) {
+          setDetail((p) => ({ ...p, dokumenNama: nameFromHeader, _filenameResolved: true }));
+        } else {
+          setDetail((p) => ({ ...p, _filenameResolved: true }));
+        }
+      } catch {
+        setDetail((p) => ({ ...p, _filenameResolved: true }));
+      }
+    })();
+  }, [detail.dokumenUrl, detail.dokumenPath, detail._filenameResolved, detail.dokumenNama]);
+
+  const handleOpenDocument = async (e) => {
+    e.preventDefault();
+    try {
+      const resp = await fetchDocumentBlob(detail.dokumenPath || detail.dokumenUrl);
+      const blobUrl = URL.createObjectURL(resp.data);
+      window.open(blobUrl, "_blank", "noopener,noreferrer");
+    } catch {
+      if (detail.dokumenUrl) {
+        window.open(detail.dokumenUrl, "_blank", "noopener,noreferrer");
+      }
+    }
+  };
+
   const getStatusBadge = () => {
-    if (status === "Menunggu Persetujuan") {
+    if (detail.statusLabel === "Menunggu") {
       return (
         <span
           className="flex items-center px-4 py-2 font-poppins font-semibold text-[16px]"
-          style={{
-            color: "#D69E2E",
-            background: "#FEF5E7",
-            borderRadius: 10,
-            fontWeight: 600,
-          }}
+          style={{ color: "#D69E2E", background: "#FEF5E7", borderRadius: 10, fontWeight: 600 }}
         >
-          Menunggu Persetujuan
+          Menunggu
         </span>
       );
     }
-    if (status === "Ditolak") {
+    if (detail.statusLabel === "Ditolak") {
       return (
         <span
           className="flex items-center px-4 py-2 font-poppins font-semibold text-[16px]"
-          style={{
-            color: "#FC0000",
-            background: "#FFDEDB",
-            borderRadius: 10,
-            fontWeight: 600,
-          }}
+          style={{ color: "#FC0000", background: "#FFDEDB", borderRadius: 10, fontWeight: 600 }}
         >
           Persetujuan Ditolak
         </span>
       );
     }
-    if (status === "Disetujui") {
+    if (detail.statusLabel === "Disetujui") {
       return (
         <span
           className="flex items-center px-4 py-2 font-poppins font-semibold text-[16px]"
-          style={{
-            color: "#47D62E",
-            background: "#E7FEED",
-            borderRadius: 10,
-            fontWeight: 600,
-          }}
+          style={{ color: "#47D62E", background: "#E7FEED", borderRadius: 10, fontWeight: 600 }}
         >
           Disetujui
         </span>
       );
     }
+    return null;
   };
 
-  // Pop up aksi
-  const handleReject = () => {
-    setShowReject(true);
-    setRejectReason("");
-  };
-  const handleAccept = () => {
-    setShowAccept(true);
-    setAcceptNote("");
-  };
-  const submitReject = (e) => {
+  const handleReject = () => { setShowReject(true); setRejectReason(""); };
+  const handleAccept = () => { setShowAccept(true); setAcceptNote(""); };
+
+  const submitReject = async (e) => {
     e.preventDefault();
-    setStatus("Ditolak");
-    setCatatan(rejectReason);
-    setShowReject(false);
-    localStorage.setItem(STATUS_KEY, "Ditolak");
-    localStorage.setItem(CATATAN_KEY, rejectReason);
-  };
-  const submitAccept = (e) => {
-    e.preventDefault();
-    setStatus("Disetujui");
-    setCatatan(acceptNote);
-    setShowAccept(false);
-    localStorage.setItem(STATUS_KEY, "Disetujui");
-    localStorage.setItem(CATATAN_KEY, acceptNote);
+    if (submitting) return;
+
+    const prevStatus = detail.statusLabel;
+    const prevCatatan = detail.catatan;
+
+    setSubmitting(true);
+    setDetail((p) => ({ ...p, statusLabel: "Ditolak", catatan: rejectReason }));
+
+    try {
+      await rejectVerification({ reference_number: reference, reason: rejectReason });
+      try {
+        window.dispatchEvent(
+          new CustomEvent("app:data-dirty", {
+            detail: { type: "verification", action: "rejected", reference },
+          })
+        );
+        sessionStorage.setItem("dirty:verification", String(Date.now()));
+      } catch {}
+      setShowReject(false);
+    } catch (error) {
+      setDetail((p) => ({ ...p, statusLabel: prevStatus, catatan: prevCatatan }));
+      alert(error?.response?.data?.message || "Gagal menolak pengajuan.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  // Aksi bawah
+  const submitAccept = async (e) => {
+    e.preventDefault();
+    if (submitting) return;
+
+    const prevStatus = detail.statusLabel;
+    const prevCatatan = detail.catatan;
+
+    setSubmitting(true);
+    setDetail((p) => ({ ...p, statusLabel: "Disetujui", catatan: acceptNote }));
+
+    try {
+      await approveVerification({ reference_number: reference, note: acceptNote });
+      try {
+        window.dispatchEvent(
+          new CustomEvent("app:data-dirty", {
+            detail: { type: "verification", action: "approved", reference },
+          })
+        );
+        sessionStorage.setItem("dirty:verification", String(Date.now()));
+        sessionStorage.setItem("dirty:cards", String(Date.now()));
+      } catch {}
+      setShowAccept(false);
+    } catch (error) {
+      setDetail((p) => ({ ...p, statusLabel: prevStatus, catatan: prevCatatan }));
+      alert(error?.response?.data?.message || "Gagal menyetujui pengajuan.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   let actionSection;
-  if (status === "Menunggu Persetujuan") {
+  if (detail.statusLabel === "Menunggu") {
     actionSection = (
       <div className="flex gap-4 justify-end">
         <button
           className="px-8 py-2 text-white font-poppins font-semibold rounded-[7px]"
-          style={{
-            background: "linear-gradient(90deg, #6A8BB0 0%, #5E5BAD 100%)",
-            fontWeight: 600,
-            fontSize: 16,
-          }}
+          style={{ background: "linear-gradient(90deg, #6A8BB0 0%, #5E5BAD 100%)", fontWeight: 600, fontSize: 16 }}
           onClick={() => navigate("/admin/verifikasi")}
         >
           Kembali
         </button>
         <button
           className="px-8 py-2 text-white font-poppins font-semibold rounded-[7px]"
-          style={{
-            background: "#E41D26",
-            fontWeight: 600,
-            fontSize: 16,
-          }}
+          style={{ background: "#E41D26", fontWeight: 600, fontSize: 16 }}
           onClick={handleReject}
         >
           Tolak
         </button>
         <button
           className="px-8 py-2 text-white font-poppins font-semibold rounded-[7px]"
-          style={{
-            background: "#1FAF35",
-            fontWeight: 600,
-            fontSize: 16,
-          }}
+          style={{ background: "#1FAF35", fontWeight: 600, fontSize: 16 }}
           onClick={handleAccept}
         >
           Setuju
         </button>
       </div>
     );
-  } else if (status === "Ditolak") {
+  } else if (detail.statusLabel === "Ditolak") {
     actionSection = (
       <div className="flex gap-4 items-center">
         <div
           className="font-poppins font-semibold px-5 py-2 rounded-[8px]"
-          style={{
-            color: "#FF0004",
-            background: "#FFDEDB",
-            fontSize: 15,
-            borderRadius: 8,
-            marginRight: 10,
-            minWidth: 0,
-            maxWidth: 320,
-            overflowWrap: "break-word"
-          }}
+          style={{ color: "#FF0004", background: "#FFDEDB", fontSize: 15, borderRadius: 8, marginRight: 10, minWidth: 0, maxWidth: 320, overflowWrap: "break-word" }}
         >
-          {catatan || "-"}
+          {detail.catatan || "-"}
         </div>
         <div
           className="font-poppins font-medium px-5 py-2 rounded-[8px]"
-          style={{
-            background: "#E3E3E3",
-            color: "#242424",
-            fontSize: 15,
-            borderRadius: 8,
-          }}
+          style={{ background: "#E3E3E3", color: "#242424", fontSize: 15, borderRadius: 8 }}
         >
-          Petugas : {adminName}
+          Petugas : {adminNameFromLS}
         </div>
       </div>
     );
-  } else if (status === "Disetujui") {
+  } else if (detail.statusLabel === "Disetujui") {
     actionSection = (
       <div className="flex gap-4 items-center">
         <div
           className="font-poppins font-medium px-5 py-2 rounded-[8px]"
-          style={{
-            background: "#E3E3E3",
-            color: "#242424",
-            fontSize: 15,
-            borderRadius: 8,
-          }}
+          style={{ background: "#E3E3E3", color: "#242424", fontSize: 15, borderRadius: 8 }}
         >
-          Catatan : {catatan || "-"}
+          Catatan : {detail.catatan || "-"}
         </div>
         <div
           className="font-poppins font-medium px-5 py-2 rounded-[8px]"
-          style={{
-            background: "#E3E3E3",
-            color: "#242424",
-            fontSize: 15,
-            borderRadius: 8,
-          }}
+          style={{ background: "#E3E3E3", color: "#242424", fontSize: 15, borderRadius: 8 }}
         >
-          Petugas : {adminName}
+          Petugas : {adminNameFromLS}
         </div>
       </div>
     );
@@ -234,15 +421,7 @@ export default function FormDetail() {
           Admin Panel Kartu Visitor
         </div>
         <div className="w-full flex justify-center mb-12">
-          <div
-            style={{
-              width: "100%",
-              height: 2,
-              background: "#C4C4C4",
-              borderRadius: 2,
-              margin: "0 auto",
-            }}
-          />
+          <div style={{ width: "100%", height: 2, background: "#C4C4C4", borderRadius: 2, margin: "0 auto" }} />
         </div>
         <nav className="flex flex-col gap-4 mt-2">
           {[
@@ -257,9 +436,10 @@ export default function FormDetail() {
                 key={item.label}
                 onClick={() => navigate(item.path)}
                 className={`flex items-center gap-4 px-4 py-2 text-left transition-all hover:opacity-80
-                  ${isActive
-                    ? "bg-gradient-to-r from-[#6A8BB0] to-[#5E5BAD] text-white font-semibold rounded-[15px]"
-                    : "bg-transparent text-[#474646] font-semibold hover:bg-gray-100 rounded-[15px]"
+                  ${
+                    isActive
+                      ? "bg-gradient-to-r from-[#6A8BB0] to-[#5E5BAD] text-white font-semibold rounded-[15px]"
+                      : "bg-transparent text-[#474646] font-semibold hover:bg-gray-100 rounded-[15px]"
                   } text-[17px]`}
                 style={isActive ? { boxShadow: "0 2px 8px rgba(90,90,140,0.07)" } : {}}
               >
@@ -286,28 +466,17 @@ export default function FormDetail() {
           <span className="font-poppins font-semibold text-[24px] text-[#474646]">
             Detail Pengajuan Visitor
           </span>
-          {/* Profile section */}
           <div className="relative ml-auto" style={{ minWidth: 200 }}>
-            <div
-              className="absolute top-0 left-0 w-full h-full"
-              style={{
-                background: "rgba(106,139,176,0.13)",
-                borderRadius: 15,
-                zIndex: 0,
-              }}
-            ></div>
+            <div className="absolute top-0 left-0 w-full h-full" style={{ background: "rgba(106,139,176,0.13)", borderRadius: 15, zIndex: 0 }} />
             <button
               className="relative flex items-center gap-2 px-5 py-2 cursor-pointer z-10 hover:opacity-80 transition-opacity"
-              style={{
-                borderRadius: 15,
-                background: "transparent",
-              }}
+              style={{ borderRadius: 15, background: "transparent" }}
             >
               <span className="w-[38px] h-[38px] rounded-full bg-[#6A8BB0] flex items-center justify-center text-white text-[24px] font-poppins font-semibold mr-2">
-                A
+                {(adminNameFromLS[0] || "A").toUpperCase()}
               </span>
               <span className="font-poppins font-medium text-[18px] leading-[36px] text-[#474646]">
-                Admin rafi
+                {adminNameFromLS}
               </span>
             </button>
           </div>
@@ -317,211 +486,185 @@ export default function FormDetail() {
         <div className="w-full max-w-[900px] mx-auto">
           <div className="bg-white rounded-[20px] shadow-md p-8 relative">
             <div className="text-[15px] mb-3 font-poppins flex items-center">
-              <span
-                className="cursor-pointer"
-                style={{ color: "#1E3A8A", fontWeight: 500 }}
-                onClick={() => navigate("/admin/verifikasi")}
-              >
+              <span className="cursor-pointer" style={{ color: "#1E3A8A", fontWeight: 500 }} onClick={() => navigate("/admin/verifikasi")}>
                 verifikasi & persetujuan
               </span>
               <span style={{ color: "#8C8C8C", marginLeft: 4 }}>
                 {">"} <span>Detail Pengajuan</span>
               </span>
             </div>
-            {/* Nama dan Status */}
-            <div className="flex items-center justify-between mb-2">
-              <span
-                className="font-poppins font-semibold text-[22px]"
-                style={{ color: "#242424", letterSpacing: "0.01em" }}
+
+            {err && (
+              <div
+                className="mb-3 font-poppins"
+                style={{ background: "#FFDEDB", color: "#B42318", border: "1px solid #FEE4E2", borderRadius: 10, padding: "10px 12px" }}
               >
-                {initialData.nama}
+                {err}
+              </div>
+            )}
+
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-poppins font-semibold text-[22px]" style={{ color: "#242424", letterSpacing: "0.01em" }}>
+                {loading ? "Memuat..." : detail.nama}
               </span>
               {getStatusBadge()}
             </div>
-            {/* Garis bawah */}
-            <div
-              style={{
-                width: "100%",
-                height: 2,
-                background: "#E3E3E3",
-                borderRadius: 2,
-                margin: "8px 0 18px 0",
-              }}
-            />
 
-            {/* Isi Detail 2 kolom */}
+            <div style={{ width: "100%", height: 2, background: "#E3E3E3", borderRadius: 2, margin: "8px 0 18px 0" }} />
+
             <div className="flex flex-wrap gap-y-5 mb-5">
-              {/* Kolom kiri */}
               <div className="w-full md:w-1/2 pr-0 md:pr-5 flex flex-col gap-y-4">
-                <DetailCol label="Nama Pemohon" value={initialData.nama} />
-                <DetailCol label="Nomor KTP" value={initialData.noKtp} />
-                <DetailCol label="Email" value={initialData.email} />
-                <DetailCol label="Tanggal Kunjungan" value={initialData.tanggal} />
+                <DetailCol label="Nama Pemohon" value={detail.nama} />
+                <DetailCol label="Nomor KTP" value={detail.noKtp} />
+                <DetailCol label="Email" value={detail.email} />
+                <DetailCol label="Tanggal Kunjungan" value={detail.tanggal} />
                 <DetailCol
                   label="Dokumen Pendukung"
                   value={
-                    <a
-                      href={"/dummy_files/" + initialData.dokumen}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        color: "#1E3A8A",
-                        textDecoration: "underline",
-                        fontWeight: 600,
-                        marginLeft: "auto",
-                      }}
-                    >
-                      Lihat
-                    </a>
+                    detail.dokumenUrl ? (
+                      <a
+                        href={detail.dokumenUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={handleOpenDocument}
+                        style={{ color: "#1E3A8A", textDecoration: "underline", fontWeight: 600, marginLeft: "auto" }}
+                      >
+                        Lihat
+                      </a>
+                    ) : (
+                      "-"
+                    )
                   }
-                  fileName={initialData.dokumen}
+                  fileName={detail.dokumenNama}
+                  fileUrl={detail.dokumenUrl}
                 />
               </div>
-              {/* Kolom kanan */}
+
               <div className="w-full md:w-1/2 flex flex-col gap-y-4">
-                <DetailCol label="Instansi/Perusahaan" value={initialData.instansi} />
-                <DetailCol label="Nomor Handphone" value={initialData.handphone} />
-                <DetailCol label="Stasiun Tujuan" value={initialData.stasiun} />
-                <DetailCol label="Selesai Kunjungan" value={initialData.selesaiKunjungan} />
-                <DetailCol label="Nomor Pengajuan" value={initialData.noPengajuan} />
+                <DetailCol label="Instansi/Perusahaan" value={detail.instansi} />
+                <DetailCol label="Nomor Handphone" value={detail.handphone} />
+                <DetailCol label="Stasiun Tujuan" value={detail.stasiun} />
+                <DetailCol label="Selesai Kunjungan" value={detail.selesaiKunjungan} />
+                <DetailCol label="Nomor Pengajuan" value={detail.noPengajuan} />
               </div>
             </div>
-            {/* Tujuan Kunjungan satu baris, full lebar */}
+
             <div>
-              <DetailCol
-                label="Tujuan Kunjungan"
-                value={initialData.tujuan}
-                fullWidth
-              />
+              <DetailCol label="Tujuan Kunjungan" value={detail.tujuan} fullWidth />
             </div>
 
-            {/* Garis bawah kedua */}
-            <div
-              style={{
-                width: "100%",
-                height: 2,
-                background: "#E3E3E3",
-                borderRadius: 2,
-                margin: "18px 0 15px 0",
-              }}
-            />
+            <div style={{ width: "100%", height: 2, background: "#E3E3E3", borderRadius: 2, margin: "18px 0 15px 0" }} />
 
             {actionSection}
 
-            {/* Popup Tolak */}
-            {showReject && (
-              <div className="fixed inset-0 bg-[rgba(0,0,0,0.15)] flex items-center justify-center z-[60]">
-                <form
-                  className="bg-white p-10 rounded-[20px] shadow-lg min-w-[400px] w-[99%] max-w-[500px] relative"
-                  onSubmit={submitReject}
-                >
-                  <div className="flex flex-col items-center mb-7">
-                    <Icon icon="ic:round-cancel" color="#E41D26" width={56} height={56} />
-                    <span className="font-poppins font-bold" style={{ color: "#E41D26", fontSize: 28, marginTop: 16 }}>
-                      Konfirmasi Penolakan
-                    </span>
-                  </div>
-                  <div className="mb-2 font-poppins font-medium text-[#474646]">
-                    Nama Petugas Penolak
-                    <input
-                      type="text"
-                      value={adminName}
-                      readOnly
-                      className="mt-1 block w-full rounded-md bg-[#E3E3E3] px-3 py-2 font-poppins"
-                      style={{ color: "#4F4D4D", fontWeight: 500, border: "none" }}
-                    />
-                  </div>
-                  <div className="mb-5 font-poppins font-medium text-[#474646]">
-                    Alasan Penolakan
-                    <textarea
-                      value={rejectReason}
-                      onChange={e => setRejectReason(e.target.value)}
-                      rows={3}
-                      placeholder="Masukkan alasan penolakan..."
-                      required
-                      className="mt-1 block w-full rounded-md bg-[#E3E3E3] px-3 py-2 font-poppins"
-                      style={{ color: "#4F4D4D", fontWeight: 500, border: "none", resize: "vertical" }}
-                    />
-                  </div>
-                  <div className="flex gap-3 justify-end">
-                    <button
-                      type="button"
-                      className="px-4 py-2 rounded font-poppins font-semibold"
-                      style={{ background: "#E3E3E3", color: "#474646" }}
-                      onClick={() => setShowReject(false)}
-                    >
-                      Batal
-                    </button>
-                    <button
-                      type="submit"
-                      className="px-4 py-2 rounded bg-[#E41D26] text-white font-poppins font-semibold"
-                    >
-                      Tolak
-                    </button>
-                  </div>
-                </form>
-              </div>
-            )}
+            {/* Popup Tolak — kecil, tanpa tombol X */}
+            <SmallModal
+              open={showReject}
+              onClose={() => setShowReject(false)}
+              title="Konfirmasi Penolakan"
+              icon="ic:round-cancel"
+              iconColor="#fff"
+            >
+              <form onSubmit={submitReject}>
+                <div className="mb-3 font-poppins font-medium text-[#474646]">
+                  Nama Petugas Penolak
+                  <input
+                    type="text"
+                    value={adminNameFromLS}
+                    readOnly
+                    className="mt-1 block w-full rounded-[10px] bg-[#E3E3E3] px-3 py-2 font-poppins"
+                    style={{ color: "#4F4D4D", fontWeight: 500, border: "none" }}
+                  />
+                </div>
+                <div className="mb-5 font-poppins font-medium text-[#474646]">
+                  Alasan Penolakan
+                  <textarea
+                    value={rejectReason}
+                    onChange={(e) => setRejectReason(e.target.value)}
+                    rows={3}
+                    placeholder="Masukkan alasan penolakan..."
+                    required
+                    className="mt-1 block w-full rounded-[10px] bg-[#E3E3E3] px-3 py-2 font-poppins"
+                    style={{ color: "#4F4D4D", fontWeight: 500, border: "none", resize: "vertical" }}
+                  />
+                </div>
+                <div className="flex gap-3 justify-end">
+                  <button
+                    type="button"
+                    className="px-4 py-2 rounded-[8px] font-poppins font-semibold"
+                    style={{ background: "#E3E3E3", color: "#474646" }}
+                    onClick={() => setShowReject(false)}
+                    disabled={submitting}
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 rounded-[8px] bg-[#E41D26] text-white font-poppins font-semibold"
+                    disabled={submitting}
+                  >
+                    {submitting ? "Memproses..." : "Tolak"}
+                  </button>
+                </div>
+              </form>
+            </SmallModal>
 
-            {/* Popup Setuju */}
-            {showAccept && (
-              <div className="fixed inset-0 bg-[rgba(0,0,0,0.15)] flex items-center justify-center z-[60]">
-                <form
-                  className="bg-white p-10 rounded-[20px] shadow-lg min-w-[400px] w-[99%] max-w-[500px] relative"
-                  onSubmit={submitAccept}
-                >
-                  <div className="flex flex-col items-center mb-7">
-                    <Icon icon="icon-park-twotone:check-one" color="#1FAF35" width={56} height={56} />
-                    <span className="font-poppins font-bold" style={{ color: "#1FAF35", fontSize: 28, marginTop: 16 }}>
-                      Konfirmasi Persetujuan
-                    </span>
-                  </div>
-                  <div className="mb-2 font-poppins font-medium text-[#474646]">
-                    Nama Petugas
-                    <input
-                      type="text"
-                      value={adminName}
-                      readOnly
-                      className="mt-1 block w-full rounded-md bg-[#E3E3E3] px-3 py-2 font-poppins"
-                      style={{ color: "#4F4D4D", fontWeight: 500, border: "none" }}
-                    />
-                  </div>
-                  <div className="mb-5 font-poppins font-medium text-[#474646]">
-                    Catatan Persetujuan
-                    <textarea
-                      value={acceptNote}
-                      onChange={e => setAcceptNote(e.target.value)}
-                      rows={3}
-                      placeholder="Masukkan catatan tambahan seperti membawa KTP asli"
-                      required
-                      className="mt-1 block w-full rounded-md bg-[#E3E3E3] px-3 py-2 font-poppins"
-                      style={{ color: "#4F4D4D", fontWeight: 500, border: "none", resize: "vertical" }}
-                    />
-                  </div>
-                  <div className="flex gap-3 justify-end">
-                    <button
-                      type="button"
-                      className="px-4 py-2 rounded font-poppins font-semibold"
-                      style={{ background: "#E3E3E3", color: "#474646" }}
-                      onClick={() => setShowAccept(false)}
-                    >
-                      Batal
-                    </button>
-                    <button
-                      type="submit"
-                      className="px-4 py-2 rounded bg-[#1FAF35] text-white font-poppins font-semibold"
-                    >
-                      Setuju
-                    </button>
-                  </div>
-                </form>
-              </div>
-            )}
+            {/* Popup Setuju — kecil, tanpa tombol X */}
+            <SmallModal
+              open={showAccept}
+              onClose={() => setShowAccept(false)}
+              title="Konfirmasi Persetujuan"
+              icon="icon-park-twotone:check-one"
+              iconColor="#fff"
+            >
+              <form onSubmit={submitAccept}>
+                <div className="mb-3 font-poppins font-medium text-[#474646]">
+                  Nama Petugas
+                  <input
+                    type="text"
+                    value={adminNameFromLS}
+                    readOnly
+                    className="mt-1 block w-full rounded-[10px] bg-[#E3E3E3] px-3 py-2 font-poppins"
+                    style={{ color: "#4F4D4D", fontWeight: 500, border: "none" }}
+                  />
+                </div>
+                <div className="mb-5 font-poppins font-medium text-[#474646]">
+                  Catatan Persetujuan
+                  <textarea
+                    value={acceptNote}
+                    onChange={(e) => setAcceptNote(e.target.value)}
+                    rows={3}
+                    placeholder="Masukkan catatan tambahan seperti membawa KTP asli"
+                    required
+                    className="mt-1 block w-full rounded-[10px] bg-[#E3E3E3] px-3 py-2 font-poppins"
+                    style={{ color: "#4F4D4D", fontWeight: 500, border: "none", resize: "vertical" }}
+                  />
+                </div>
+                <div className="flex gap-3 justify-end">
+                  <button
+                    type="button"
+                    className="px-4 py-2 rounded-[8px] font-poppins font-semibold"
+                    style={{ background: "#E3E3E3", color: "#474646" }}
+                    onClick={() => setShowAccept(false)}
+                    disabled={submitting}
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 rounded-[8px] text-white font-poppins font-semibold"
+                    style={{ background: "#1FAF35" }}
+                    disabled={submitting}
+                  >
+                    {submitting ? "Memproses..." : "Setuju"}
+                  </button>
+                </div>
+              </form>
+            </SmallModal>
           </div>
         </div>
       </main>
 
-      {/* Custom CSS untuk font dan responsive */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
         .font-poppins { font-family: 'Poppins', sans-serif; }
@@ -536,15 +679,14 @@ export default function FormDetail() {
   );
 }
 
-// Komponen detail satu baris
-function DetailCol({ label, value, fullWidth, fileName }) {
+/* =========================
+ * DetailCol
+ * ========================= */
+function DetailCol({ label, value, fullWidth, fileName, fileUrl }) {
   if (label === "Dokumen Pendukung" && fileName) {
     return (
       <div className={fullWidth ? "w-full mb-2" : "mb-2"}>
-        <div
-          className="font-poppins font-medium text-[15px] mb-1"
-          style={{ color: "#242424", fontWeight: 500 }}
-        >
+        <div className="font-poppins font-medium text-[15px] mb-1" style={{ color: "#242424", fontWeight: 500 }}>
           {label}
         </div>
         <div
@@ -559,31 +701,28 @@ function DetailCol({ label, value, fullWidth, fileName }) {
             overflow: "hidden",
             textOverflow: "ellipsis",
           }}
+          title={fileName}
         >
-          <span className="mr-2">{fileName}</span>
-          <a
-            href={"/dummy_files/" + fileName}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              color: "#1E3A8A",
-              textDecoration: "underline",
-              fontWeight: 600,
-              marginLeft: "auto",
-            }}
-          >
-            Lihat
-          </a>
+          <span className="mr-2 truncate">{fileName}</span>
+          {fileUrl ? (
+            <a
+              href={fileUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: "#1E3A8A", textDecoration: "underline", fontWeight: 600, marginLeft: "auto" }}
+            >
+              Lihat
+            </a>
+          ) : (
+            <span style={{ marginLeft: "auto", color: "#777" }}>-</span>
+          )}
         </div>
       </div>
     );
   }
   return (
     <div className={fullWidth ? "w-full mb-2" : "mb-2"}>
-      <div
-        className="font-poppins font-medium text-[15px] mb-1"
-        style={{ color: "#242424", fontWeight: 500 }}
-      >
+      <div className="font-poppins font-medium text-[15px] mb-1" style={{ color: "#242424", fontWeight: 500 }}>
         {label}
       </div>
       <div
@@ -598,8 +737,9 @@ function DetailCol({ label, value, fullWidth, fileName }) {
           overflow: "hidden",
           textOverflow: "ellipsis",
         }}
+        title={typeof value === "string" ? value : undefined}
       >
-        {value}
+        {value || "-"}
       </div>
     </div>
   );

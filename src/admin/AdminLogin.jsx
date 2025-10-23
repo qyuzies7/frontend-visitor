@@ -4,19 +4,45 @@ import { FaUser, FaEye, FaEyeSlash } from "react-icons/fa";
 import kaiLogo from "../assets/KAI-logo.png";
 import trainImg from "../assets/login-train.png";
 
+import { adminLogin, getAdminMe, setAuthToken } from "../api";
+
 export default function AdminLogin() {
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState("");          
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    if (email === "admin@kai.id" && password === "admin123") {
+    setErr("");
+    setLoading(true);
+
+    try {
+      const { data } = await adminLogin({ email: email.trim(), password });
+      setAuthToken(data?.token); 
+      try {
+        const me = await getAdminMe();
+        const adminName =
+          me?.data?.full_name ||
+          me?.data?.name ||
+          data?.user?.full_name ||
+          data?.user?.name ||
+          "Admin";
+        localStorage.setItem("adminName", adminName);
+      } catch {
+      }
+
       navigate("/admin/dashboard");
-    } else {
-      setErr("Email atau Password salah!");
+    } catch (error) {
+      setErr(
+        error?.response?.status === 401
+          ? "Email atau Password salah!"
+          : error?.response?.data?.message || "Gagal login"
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -42,42 +68,43 @@ export default function AdminLogin() {
           </div>
         </div>
 
-        {/* Form Login */}
+        {/* Kanan */}
         <div className="w-1/2 h-full flex items-center justify-center bg-white">
           <div className="w-[360px]">
             <div className="mb-7 text-center">
-              <span className="text-[1.4rem] font-poppins font-semibold">
-                Login
-              </span>
+              <span className="text-[1.4rem] font-poppins font-semibold">Login</span>
             </div>
-            
+
             <form className="flex flex-col gap-6" onSubmit={handleLogin}>
               <div className="relative flex items-center">
                 <input
-                  type="text"
+                  type="email"
                   placeholder="Email"
                   value={email}
+                  autoFocus
                   className="w-full h-[44px] pl-4 pr-10 bg-[#E6E6E6] text-[#6A6A6A] rounded-md font-poppins font-medium"
-                  onChange={e => setEmail(e.target.value)}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#333]">
                   <FaUser size={22} />
                 </span>
               </div>
-              
+
               <div className="relative flex items-center">
                 <input
                   type={showPassword ? "text" : "password"}
                   placeholder="Password"
                   value={password}
                   className="w-full h-[44px] pl-4 pr-10 bg-[#E6E6E6] text-[#6A6A6A] rounded-md font-poppins font-medium password-field"
-                  onChange={e => setPassword(e.target.value)}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
                 />
-                
                 {password && (
-                  <span 
+                  <span
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-[#333] cursor-pointer"
-                    onClick={() => setShowPassword(!showPassword)}
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label="Toggle password"
                   >
                     {showPassword ? <FaEyeSlash size={22} /> : <FaEye size={22} />}
                   </span>
@@ -92,26 +119,25 @@ export default function AdminLogin() {
 
               <button
                 type="submit"
-                className="w-full h-[44px] bg-[#203D8C] rounded-md text-white text-[1rem] font-poppins font-bold mt-1 hover:bg-[#1a3278] transition-colors"
+                disabled={loading}
+                className="w-full h-[44px] bg-[#203D8C] rounded-md text-white text-[1rem] font-poppins font-bold mt-1 hover:bg-[#1a3278] transition-colors disabled:opacity-60"
               >
-                Login
+                {loading ? "Loading..." : "Login"}
               </button>
             </form>
           </div>
         </div>
       </div>
 
-      {/* Custom CSS untuk gradient dan password field */}
+      {/* Custom CSS */}
       <style jsx>{`
         .bg-gradient-custom {
           background: linear-gradient(90deg, rgba(106,139,176,0.85) 0%, rgba(94,91,173,0.80) 100%);
         }
-        
         .password-field::-ms-reveal,
         .password-field::-ms-clear {
           display: none;
         }
-        
         .password-field::-webkit-credentials-auto-fill-button {
           display: none !important;
           visibility: hidden;
