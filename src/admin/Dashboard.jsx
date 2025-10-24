@@ -1,4 +1,3 @@
-// src/admin/Dashboard.jsx
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Icon } from "@iconify/react";
@@ -23,7 +22,6 @@ const cardConfig = [
   { title: "Total Kartu Hilang",          valueKey: "hilang",       icon: "solar:card-search-broken" },
 ];
 
-// =============== helpers ===============
 function extractArray(res) {
   const d = res?.data;
   if (Array.isArray(d)) return d;
@@ -51,7 +49,6 @@ function isPendingStatus(raw) {
   );
 }
 
-// Baca kondisi dari item aktif (berbagai kemungkinan nama field)
 function readCondition(item) {
   return (
     item?.condition ??
@@ -70,15 +67,12 @@ function isDamaged(item) {
   return v === "damaged" || v === "rusak" || v.includes("damaged") || v.includes("rusak");
 }
 
-// Parser angka yang toleran berbagai bentuk payload
 function parseFlexibleTotal(res) {
   const d = res?.data;
 
-  // angka / string angka langsung
   if (typeof d === "number") return d;
   if (typeof d === "string" && !isNaN(Number(d))) return Number(d);
 
-  // kunci umum di top-level
   const keys = [
     "total", "count",
     "damaged", "lost", "rusak", "hilang",
@@ -93,7 +87,6 @@ function parseFlexibleTotal(res) {
     if (typeof v === "string" && !isNaN(Number(v))) return Number(v);
   }
 
-  // nested containers
   const containers = ["counts", "stats", "data", "result"];
   for (const c of containers) {
     const obj = d?.[c];
@@ -109,11 +102,9 @@ function parseFlexibleTotal(res) {
     }
   }
 
-  // array
   const arr = extractArray(res);
   if (Array.isArray(arr)) return arr.length;
 
-  // fallback – jumlahkan angka di object
   if (d && typeof d === "object") {
     const nums = Object.values(d).filter((v) => typeof v === "number");
     if (nums.length === 1) return nums[0];
@@ -122,7 +113,6 @@ function parseFlexibleTotal(res) {
   return 0;
 }
 
-// =============== component ===============
 export default function Dashboard() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -173,9 +163,8 @@ export default function Dashboard() {
     }, delay);
   };
 
-  // Selalu ambil fresh untuk rusak/hilang dan gabungkan dengan aktif
   const refreshCounters = async () => {
-    const ttlOpt = { ttl: 0 }; // paksa tanpa cache
+    const ttlOpt = { ttl: 0 }; 
     try {
       const [damagedRes, lostRes, activeRes] = await Promise.all([
         getDamagedCards(ttlOpt),
@@ -196,11 +185,9 @@ export default function Dashboard() {
         hilang: baseLost + activeLost,
       }));
     } catch {
-      // jangan blok UI
     }
   };
 
-  // Loader utama + anti-race
   const loadStats = async ({ initial = false } = {}) => {
     const reqId = ++lastRequestId.current;
 
@@ -220,8 +207,8 @@ export default function Dashboard() {
         damagedRes,
         lostRes,
       ] = await Promise.all([
-        getActiveCards(),       // boleh cached (lihat api.js: TTL kecil + _ts)
-        getVerificationsAll(),  // pending/approved/rejected digabung
+        getActiveCards(),       
+        getVerificationsAll(),  
         getTodayIssued(),
         getTodayReturned(),
         getDamagedCards(),
@@ -244,7 +231,6 @@ export default function Dashboard() {
         totalPending = verificationsRes.data.total;
       }
 
-      // gabungkan counter backend + yang masih aktif bertanda rusak/hilang
       const activeDamaged = activeArr.filter(isDamaged).length;
       const activeLost = activeArr.filter(isLost).length;
       const damagedTotal = parseFlexibleTotal(damagedRes) + activeDamaged;
@@ -270,14 +256,11 @@ export default function Dashboard() {
     }
   };
 
-  // initial load
   useEffect(() => {
     loadStats({ initial: true });
     refreshCounters().catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Focus/visibility refresh
   useEffect(() => {
     const onFocus = () => debouncedRefresh({ initial: false }, 100);
     window.addEventListener("focus", onFocus);
@@ -291,7 +274,6 @@ export default function Dashboard() {
     return () => document.removeEventListener("visibilitychange", onVisibility);
   }, []);
 
-  // Event bridge dari halaman lain
   useEffect(() => {
     const onChanged = (e) => {
       const eventType = e?.detail?.type;
@@ -307,7 +289,6 @@ export default function Dashboard() {
     return () => window.removeEventListener("dashboard:changed", onChanged);
   }, []);
 
-  // storage/BroadcastChannel dirty flags
   useEffect(() => {
     function onStorage(e) {
       if (e.key === "dirty:cards") {
@@ -333,7 +314,6 @@ export default function Dashboard() {
     return () => { try { if (ch) ch.close(); } catch {} };
   }, []);
 
-  // Incremental bump
   useEffect(() => {
     const onBump = (e) => {
       const { field, delta = 1 } = e.detail || {};
@@ -347,7 +327,7 @@ export default function Dashboard() {
     return () => window.removeEventListener("dashboard:increment", onBump);
   }, []);
 
-  // Reset harian untuk metrik daily
+  // Reset harian 
   useEffect(() => {
     let lastDay = new Date().toDateString();
     const tick = () => {

@@ -1,16 +1,64 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { fetchOptionLists } from '../api';
 import { FaUser } from 'react-icons/fa';
 import FormField from '../components/FormField';
 
 const Step2AksesPintu = ({ formData, setFormData, nextStep, prevStep }) => {
   const [errors, setErrors] = useState({});
 
+  const [opts, setOpts] = useState({
+    access_door: [],
+    access_purpose: [],
+    protokoler_count: [],
+    need_protokoler_escort: [], 
+  });
+
+  const norm = (arr = []) =>
+    (Array.isArray(arr) ? arr : []).map((o, i) => {
+      const value = o?.value ?? o?.id ?? String(i);
+      const label = o?.label ?? o?.name ?? String(value);
+      return { value, label };
+    });
+
+  useEffect(() => {
+    fetchOptionLists()
+      .then((res) => {
+        setOpts({
+          access_door: norm(res.access_door),
+          access_purpose: norm(res.access_purpose),
+          protokoler_count: norm(res.protokoler_count),
+          need_protokoler_escort: norm(res.need_protokoler_escort),
+        });
+      })
+      .catch(() => {
+        setOpts({ access_door: [], access_purpose: [], protokoler_count: [], need_protokoler_escort: [] });
+      });
+  }, []);
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData({
+
+    if (name === 'needProtokolerEscort') {
+      const boolVal = value === 'true';
+      const next = {
+        ...formData,
+        needProtokolerEscort: boolVal,
+      };
+      // jika TIDAK butuh, kosongkan jumlah
+      if (boolVal === false) {
+        next.protokolerCount = '';
+        setErrors((prev) => ({ ...prev, protokolerCount: '' }));
+      }
+      setFormData(next);
+      setErrors((prev) => ({ ...prev, [name]: '' }));
+      return;
+    }
+
+    const next = {
       ...formData,
-      [name]: type === 'checkbox' ? checked : value
-    });
+      [name]: type === 'checkbox' ? checked : value,
+    };
+    setFormData(next);
     setErrors((prev) => ({ ...prev, [name]: '' }));
   };
 
@@ -19,10 +67,9 @@ const Step2AksesPintu = ({ formData, setFormData, nextStep, prevStep }) => {
     if (!formData.accessDoor) newErrors.accessDoor = 'Pilih pintu yang diajukan';
     if (!formData.accessTime) newErrors.accessTime = 'Waktu akses wajib diisi';
     if (!formData.accessPurpose) newErrors.accessPurpose = 'Tujuan akses wajib diisi';
-    if (!formData.protokolerCount) newErrors.protokolerCount = 'Jumlah pendamping protokoler wajib diisi';
     if (!formData.vehicleType) newErrors.vehicleType = 'Jumlah & jenis kendaraan wajib diisi';
     if (!formData.vehiclePlate) newErrors.vehiclePlate = 'Nomor polisi kendaraan wajib diisi';
-    if (typeof formData.needProtokolerEscort === 'undefined' || formData.needProtokolerEscort === '') {
+    if (typeof formData.needProtokolerEscort !== 'boolean') {
       newErrors.needProtokolerEscort = 'Pilih kebutuhan pendampingan protokoler';
     }
 
@@ -34,6 +81,11 @@ const Step2AksesPintu = ({ formData, setFormData, nextStep, prevStep }) => {
     e.preventDefault();
     if (validateForm()) nextStep();
   };
+
+  const escortStr =
+    typeof formData.needProtokolerEscort === 'boolean'
+      ? String(formData.needProtokolerEscort)
+      : '';
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md border border-gray-300 max-w-4xl mx-auto">
@@ -51,8 +103,9 @@ const Step2AksesPintu = ({ formData, setFormData, nextStep, prevStep }) => {
           error={errors.accessDoor}
         >
           <option value="">Pilih Pintu</option>
-          <option value="timur">Timur</option>
-          <option value="selatan">Selatan</option>
+          {opts.access_door.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
         </FormField>
 
         <FormField
@@ -73,21 +126,24 @@ const Step2AksesPintu = ({ formData, setFormData, nextStep, prevStep }) => {
           error={errors.accessPurpose}
         >
           <option value="">Pilih Tujuan</option>
-          <option value="jemput">Jemput</option>
-          <option value="antar">Antar</option>
+          {opts.access_purpose.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
         </FormField>
 
         <FormField
-          label="Jumlah Pendamping Protokoler (maks. 2)"
+          label="Jumlah Pendamping Protokoler (opsional)"
           name="protokolerCount"
           type="select"
           value={formData.protokolerCount || ''}
           onChange={handleChange}
           error={errors.protokolerCount}
+          disabled={formData.needProtokolerEscort === false}
         >
-          <option value="">Pilih Jumlah</option>
-          <option value="1">1</option>
-          <option value="2">2</option>
+          <option value="">(Kosongkan jika tidak perlu)</option>
+          {opts.protokoler_count.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
         </FormField>
 
         <FormField
@@ -112,13 +168,13 @@ const Step2AksesPintu = ({ formData, setFormData, nextStep, prevStep }) => {
           label="Apakah Anda membutuhkan pendampingan protokoler?"
           name="needProtokolerEscort"
           type="select"
-          value={formData.needProtokolerEscort || ''}
+          value={escortStr}
           onChange={handleChange}
           error={errors.needProtokolerEscort}
         >
           <option value="">Pilih</option>
-          <option value="ya">Ya</option>
-          <option value="tidak">Tidak</option>
+          <option value="true">Ya</option>
+          <option value="false">Tidak</option>
         </FormField>
 
         <div className="flex justify-between md:col-span-2 mt-4">

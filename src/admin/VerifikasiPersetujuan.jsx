@@ -1,4 +1,3 @@
-// src/admin/VerifikasiPersetujuan.jsx
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Icon } from "@iconify/react";
@@ -13,9 +12,6 @@ import {
   filenameFromHeaders,
 } from "../api";
 
-/* =========================================================
- * Utils
- * ========================================================= */
 
 const statusConfig = {
   Menunggu:  { bg: "#FEF5E7", color: "#D69E2E", label: "Menunggu" },
@@ -85,9 +81,6 @@ function formatTanggal(val) {
   return `${String(d.getDate()).padStart(2, "0")} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-/* =========================================================
- * Component
- * ========================================================= */
 
 export default function VerifikasiPersetujuan() {
   const [showDropdown, setShowDropdown] = useState(false);
@@ -112,7 +105,6 @@ export default function VerifikasiPersetujuan() {
     { label: "Riwayat Pengembalian",     icon: "solar:card-search-broken",          path: "/admin/riwayat" },
   ];
 
-  // Kamus jenis kunjungan
   useEffect(() => {
     (async () => {
       try {
@@ -210,16 +202,14 @@ export default function VerifikasiPersetujuan() {
     }
   };
 
-  useEffect(() => { fetchList(); /* eslint-disable-line */ }, [typesMap]);
+  useEffect(() => { fetchList(); }, [typesMap]);
 
-  // refresh saat tab fokus kembali
   useEffect(() => {
     const onFocus = () => fetchList();
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
   }, []);
 
-  // refresh saat ada event perubahan (misal sesudah approve/reject dari halaman detail)
   useEffect(() => {
     const onDirty = (e) => {
       if (!e?.detail || e.detail.type === "verification") {
@@ -396,18 +386,17 @@ export default function VerifikasiPersetujuan() {
           </div>
         )}
 
-        {/* Table Section */}
         <div
           className="mx-auto bg-[#fff] rounded-[20px] shadow-md px-8 py-7"
           style={{ borderRadius: 20, width: "100%", maxWidth: 900 }}
         >
-          {/* Search + Status Filter + Counters */}
           <div className="flex flex-col gap-3 md:flex-row md:items-center mb-5">
+            {/* Search */}
             <div
               className="flex items-center flex-1 bg-white px-4 py-2 rounded-[11px] border border-[#E4E4E4] md:mr-3"
               style={{ maxWidth: 520 }}
             >
-              <Icon icon="ic:round-search" width={28} color="#474646} " className="mr-2" />
+              <Icon icon="ic:round-search" width={28} color="#474646" className="mr-2" />
               <input
                 type="text"
                 placeholder="Cari nama / jenis kunjungan / referensi"
@@ -418,35 +407,52 @@ export default function VerifikasiPersetujuan() {
               />
             </div>
 
-            <div className="flex gap-2 flex-wrap">
-              {["Semua", "Menunggu", "Disetujui", "Ditolak"].map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setStatusFilter(s)}
-                  className="px-3 py-1 rounded-[10px] text-[14px] font-poppins font-medium border"
-                  style={{
-                    background:
-                      s === "Semua"
-                        ? "#F4F4F4"
-                        : statusConfig[s]?.bg || "#F4F4F4",
-                    color:
-                      s === "Semua"
-                        ? "#474646"
-                        : statusConfig[s]?.color || "#474646",
-                    borderColor: s === statusFilter ? "#6A8BB0" : "#E4E4E4",
-                  }}
-                  title={`Tampilkan ${s.toLowerCase()}`}
-                >
-                  {s}
-                  {s === "Semua"
-                    ? ""
-                    : s === "Menunggu"
-                    ? ` (${pendingCount})`
-                    : s === "Disetujui"
-                    ? ` (${approvedCount})`
-                    : ` (${rejectedCount})`}
-                </button>
-              ))}
+            {/* Filters  */}
+            <div
+              className="w-full md:w-auto overflow-x-auto no-scrollbar"
+              style={{ WebkitOverflowScrolling: "touch" }}
+            >
+              <div className="inline-flex flex-nowrap whitespace-nowrap gap-x-2">
+                {[
+                  { key: "Semua",     badge: null },
+                  { key: "Menunggu",  badge: "pending" },
+                  { key: "Disetujui", badge: "approved" },
+                  { key: "Ditolak",   badge: "rejected" },
+                ].map(({ key, badge }) => {
+                  const isActive = statusFilter === key;
+                  const bg =
+                    key === "Semua"
+                      ? "#F4F4F4"
+                      : (statusConfig[key]?.bg || "#F4F4F4");
+                  const color =
+                    key === "Semua"
+                      ? "#474646"
+                      : (statusConfig[key]?.color || "#474646");
+
+                  const count =
+                    key === "Menunggu"  ? pendingCount  :
+                    key === "Disetujui" ? approvedCount :
+                    key === "Ditolak"   ? rejectedCount : null;
+
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => setStatusFilter(key)}
+                      className="inline-flex items-center justify-center px-3 py-1 rounded-[10px] text-[14px] font-poppins font-medium border whitespace-nowrap"
+                      style={{
+                        background: bg,
+                        color,
+                        borderColor: isActive ? "#6A8BB0" : "#E4E4E4",
+                        minWidth: 100,
+                        height: 30,
+                      }}
+                      title={`Tampilkan ${key.toLowerCase()}`}
+                    >
+                      {key}{count != null ? ` (${count})` : ""}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
@@ -520,7 +526,7 @@ export default function VerifikasiPersetujuan() {
 
                       <td className="py-2 px-2 text-center">
                         <div
-                          className="font-poppins font-semibold text:[15px] px-5 py-1 rounded-[8px] inline-flex justify-center items-center"
+                          className="font-poppins font-semibold text:[15px] px-5 py-1 rounded-[8px] inline-flex justify-center items-center whitespace-nowrap"
                           style={{
                             background: statusConfig[row.status]?.bg || "#eee",
                             color: statusConfig[row.status]?.color || "#555",
@@ -533,7 +539,7 @@ export default function VerifikasiPersetujuan() {
 
                       <td className="py-2 px-2 text-center">
                         <button
-                          className="px-5 py-1 font-poppins font-semibold text-white text-[15px] rounded-[8px] transition-all"
+                          className="px-5 py-1 font-poppins font-semibold text-white text-[15px] rounded-[8px] transition-all whitespace-nowrap"
                           style={{ background: "#8E8E8E" }}
                           onClick={() =>
                             navigate(`/admin/detail/${encodeURIComponent(row.reference || "")}`)
@@ -564,6 +570,11 @@ export default function VerifikasiPersetujuan() {
         .font-poppins { font-family: 'Poppins', sans-serif; }
         input::placeholder { font-family: 'Poppins', sans-serif; font-weight: 300; font-style: italic; }
         body { overflow-x: hidden; }
+
+        /* sembunyikan scrollbar horizontal kecil untuk filter */
+        .no-scrollbar::-webkit-scrollbar { height: 0px; }
+        .no-scrollbar { scrollbar-width: none; }
+
         @media (max-width: 900px) {
           aside { width: 100vw !important; position: static !important; }
           main { margin-left: 0 !important; }

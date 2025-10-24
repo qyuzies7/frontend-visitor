@@ -1,4 +1,3 @@
-// src/api.js
 import axios from "axios";
 
 export const API_BASE =
@@ -18,7 +17,7 @@ export const downloadBlob = (blob, filename) => {
   URL.revokeObjectURL(url);
 };
 
-// storage/uploads -> absolute URL helper
+// storage/uploads
 const absoluteStorageURL = (path) => {
   if (!path) return null;
   if (/^https?:\/\//i.test(path)) return path;
@@ -35,14 +34,12 @@ const http = axios.create({
   timeout: 30000,
 });
 
-// ===== Simple in-memory GET cache (TTL) with small eviction =====
 const __getCache = new Map();
 function makeKey(url, params) {
   const p = params ? stableStringifyParams(params) : "";
   return `${url}?${p}`;
 }
 
-// stable stringify for params (so order of keys tidak memengaruhi key)
 function stableStringifyParams(obj) {
   if (obj == null) return "";
   if (typeof obj !== "object") return String(obj);
@@ -64,7 +61,6 @@ export async function cachedGet(url, { params, ttl = 10000, cfg = {} } = {}) {
   }
   const res = await http.get(url, { params, ...cfg });
   __getCache.set(key, { t: now, res });
-  // Simple eviction
   const MAX_CACHE = 200;
   if (__getCache.size > MAX_CACHE) {
     const firstKey = __getCache.keys().next().value;
@@ -89,10 +85,8 @@ export const loadTokenFromStorage = () => {
   return t;
 };
 
-// Pastikan saat module diimport token langsung dibaca dari localStorage
 loadTokenFromStorage();
 
-// Interceptor request
 http.interceptors.request.use((config) => {
   config.headers = config.headers || {};
   if (!config.headers.Authorization && !config.headers["Authorization"]) {
@@ -105,7 +99,6 @@ http.interceptors.request.use((config) => {
   return config;
 });
 
-// Interceptor response
 http.interceptors.response.use(
   (res) => res,
   (err) => {
@@ -116,7 +109,6 @@ http.interceptors.response.use(
   }
 );
 
-// Document fetching helper
 export async function fetchDocumentBlob(pathOrId, cfg = {}) {
   if (!pathOrId) throw new Error("Path dokumen kosong.");
 
@@ -179,8 +171,62 @@ export const checkStatus = (data) => http.post(`/public/check-status`, data);
 export const getVisitorCardDetail = (id) =>
   http.get(`/public/visitor-cards/${id}/detail`);
 export const getStatusLogs = () => http.get(`/public/status-logs`);
-export const cancelApplication = (data) =>
-  http.post(`/public/cancel-application`, data);
+
+export async function cancelApplication(payload = {}) {
+  const ref =
+    payload.reference ||
+    payload.reference_number ||
+    payload.id ||
+    payload.nomor ||
+    payload.ref;
+  if (!ref) {
+    return http.post(`/public/cancel-application`, payload);
+  }
+
+  const bodyVariants = [
+    { reference_number: ref, reference: ref, id: ref },
+    { reference: ref },
+    { reference_number: ref },
+    { id: ref },
+  ];
+
+  const requests = [
+    (b) => http.post(`/public/cancel-application`, b),
+
+    (b) => http.post(`/public/visitor-cards/cancel`, b),
+    (b) => http.post(`/public/applications/cancel`, b),
+
+    () => http.post(`/public/visitor-cards/${encodeURIComponent(ref)}/cancel`),
+    () =>
+      http.post(`/public/applications/${encodeURIComponent(ref)}/cancel`),
+
+    (b) =>
+      http.patch(`/public/visitor-cards/cancel`, {
+        ...b,
+        status: "cancelled",
+      }),
+
+    () =>
+      http.delete(`/public/applications/${encodeURIComponent(ref)}`, {
+        data: { reason: "cancelled_by_user" },
+      }),
+  ];
+
+  let lastErr;
+  // coba kombinasi payload + endpoint
+  for (const buildBody of bodyVariants) {
+    for (const call of requests) {
+      try {
+        const res = await call(buildBody);
+        if (res?.status >= 200 && res?.status < 300) return res;
+      } catch (e) {
+        lastErr = e;
+      }
+    }
+  }
+  throw lastErr || new Error("Gagal membatalkan permohonan pada semua endpoint kandidat.");
+}
+
 export const resubmitApplication = (data) =>
   http.post(`/public/resubmit-application`, data);
 
@@ -198,7 +244,6 @@ export const getTodayIssued = () =>
 export const getTodayReturned = () =>
   cachedGet(`/admin/dashboard/today-returned`, { ttl: 10000 });
 
-/* ======================= BYPASS CACHE COUNTERS ======================= */
 export const getDamagedCards = (opts = {}) => {
   const ttl = opts.ttl ?? 0;
   if (typeof cachedGet === "function") {
@@ -224,10 +269,7 @@ export const getLostCards = (opts = {}) => {
   const url = `/admin/dashboard/lost-cards?_ts=${Date.now()}`;
   return http.get(url, { headers: { "Cache-Control": "no-cache" } }).then((r) => r);
 };
-/* ===================== END BYPASS CACHE COUNTERS ===================== */
 
-/* ======================= BYPASS CACHE LIST KARTU ===================== */
-/** list kartu APPROVED sering berubah -> selalu fresh */
 export const getApprovedCards = (opts = {}) => {
   const ttl = opts.ttl ?? 0;
   const params = { _ts: Date.now(), ...(opts.params || {}) };
@@ -244,7 +286,6 @@ export const getApprovedCards = (opts = {}) => {
   });
 };
 
-/** list kartu ACTIVE sering berubah -> selalu fresh */
 export const getActiveCards = (opts = {}) => {
   const ttl = opts.ttl ?? 0;
   const params = { _ts: Date.now(), ...(opts.params || {}) };
@@ -260,14 +301,12 @@ export const getActiveCards = (opts = {}) => {
     headers: { "Cache-Control": "no-cache" },
   });
 };
-/* ===================== END BYPASS CACHE LIST KARTU ==================== */
 
 export const getVerifications = (params) =>
   http.get(`/admin/verification`, { params });
 export const getPendingVerifications = () =>
   http.get(`/admin/verification/pending`);
 
-// ===== Helpers untuk penggabungan list =====
 const _unwrapList = (res) =>
   Array.isArray(res?.data) ? res.data : res?.data?.data || [];
 
@@ -286,9 +325,6 @@ const _pushUnique = (bucket, seen, items) => {
   }
 };
 
-/**
- * Ambil semua verifikasi lintas status
- */
 export const getVerificationsAll = async (extraParams = {}) => {
   const results = [];
   const seen = new Set();
@@ -327,6 +363,16 @@ export const getVerificationsAll = async (extraParams = {}) => {
   return { data: results };
 };
 
+export async function fetchOptionLists() {
+  const res = await http.get('/public/options', {
+    params: {
+      groups:
+        'assistance_service,access_door,access_purpose,protokoler_count,need_protokoler_escort',
+    },
+  });
+  return res.data?.data || {};
+}
+
 export const getVerificationDetail = (data) =>
   http.post(`/admin/verification/detail`, data);
 export const approveVerification = (data) =>
@@ -343,11 +389,9 @@ export const returnCard = (data) => http.post(`/admin/cards/return`, data);
 export const editCardCondition = (id, data) =>
   http.put(`/admin/cards/${id}/condition`, data);
 
-// fallback untuk update visitor-card
 export const updateVisitorCard = (id, data) =>
   http.put(`/admin/visitor-cards/${id}`, data);
 
-// Export report endpoints
 const blobOpts = { responseType: "blob" };
 
 export const exportStationDailyFlow = () =>
@@ -363,7 +407,6 @@ export const exportYearlyFlow = () =>
 export const exportCardCondition = () =>
   http.get(`/admin/reports/card-condition`, blobOpts);
 
-// Resource-like collections
 export const adminVisitorCards = {
   list: () => http.get(`/admin/visitor-cards`),
   get: (id) => http.get(`/admin/visitor-cards/${id}`),
@@ -392,7 +435,7 @@ export const adminStations = {
   list: () => http.get(`/admin/stations`),
   get: (id) => http.get(`/admin/stations/${id}`),
   create: (data) => http.post(`/admin/stations`, data),
-  update: (id, data) => http.put(`/admin/stations/${id}`, data),
+  update: (id, data) => http.put(`/admin/stations/${id}`),
   delete: (id) => http.delete(`/admin/stations/${id}`),
 };
 
@@ -408,7 +451,7 @@ export const adminUsers = {
   list: () => http.get(`/admin/users`),
   get: (id) => http.get(`/admin/users/${id}`),
   create: (data) => http.post(`/admin/users`, data),
-  update: (id, data) => http.put(`/admin/users/${id}`, data),
+  update: (id, data) => http.put(`/admin/users/${id}`),
   delete: (id) => http.delete(`/admin/users/${id}`),
 };
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getStations } from '../api';
+import { getStations, fetchOptionLists } from '../api';
 import { FaUser } from 'react-icons/fa';
 import FormField from '../components/FormField';
 
@@ -7,10 +7,19 @@ const Step2 = ({ formData, setFormData, nextStep, prevStep, visitType }) => {
   const [errors, setErrors] = useState({});
   const [stations, setStations] = useState([]);
 
-  // --- Helpers ---
+  const [opts, setOpts] = useState({
+    assistance_service: [],
+  });
+
+  const norm = (arr = []) =>
+    (Array.isArray(arr) ? arr : []).map((o, i) => {
+      const value = o?.value ?? o?.id ?? String(i);
+      const label = o?.label ?? o?.name ?? String(value);
+      return { value, label };
+    });
+
   const normalizeStations = (raw) => {
     if (!Array.isArray(raw)) return [];
-
     return raw.map((it, idx) => {
       if (typeof it === 'string') {
         const text = it.trim();
@@ -24,18 +33,8 @@ const Step2 = ({ formData, setFormData, nextStep, prevStep, visitType }) => {
         it?.label ??
         it?.station ??
         String(it?.value ?? it?.code ?? it?.id ?? `Stasiun ${idx + 1}`);
-      const value =
-        it?.value ??
-        it?.code ??
-        it?.station_code ??
-        it?.station_name ??
-        it?.name ??
-        it?.nama ??
-        name;
       let id = it?.id;
-      if (typeof id !== 'number') {
-        id = null;
-      }
+      if (typeof id !== 'number') id = null;
       id = id ?? it?.code ?? it?.station_code ?? it?.value ?? idx;
 
       return {
@@ -54,18 +53,17 @@ const Step2 = ({ formData, setFormData, nextStep, prevStep, visitType }) => {
           : Array.isArray(res?.data?.data)
           ? res.data.data
           : [];
-
         const normalized = normalizeStations(raw);
 
-        if (!normalized.length) {
-          setStations([
-            { id: 'lempuyangan', value: 'Stasiun Lempuyangan', name: 'Stasiun Lempuyangan' },
-            { id: 'yogyakarta', value: 'Stasiun Yogyakarta', name: 'Stasiun Yogyakarta' },
-            { id: 'solo-balapan', value: 'Stasiun Solo Balapan', name: 'Stasiun Solo Balapan' },
-          ]);
-        } else {
-          setStations(normalized);
-        }
+        setStations(
+          normalized.length
+            ? normalized
+            : [
+                { id: 'lempuyangan', value: 'Stasiun Lempuyangan', name: 'Stasiun Lempuyangan' },
+                { id: 'yogyakarta', value: 'Stasiun Yogyakarta', name: 'Stasiun Yogyakarta' },
+                { id: 'solo-balapan', value: 'Stasiun Solo Balapan', name: 'Stasiun Solo Balapan' },
+              ]
+        );
       })
       .catch(() => {
         setStations([
@@ -74,13 +72,23 @@ const Step2 = ({ formData, setFormData, nextStep, prevStep, visitType }) => {
           { id: 'solo-balapan', value: 'Stasiun Solo Balapan', name: 'Stasiun Solo Balapan' },
         ]);
       });
+
+    fetchOptionLists()
+      .then((res) => {
+        setOpts({
+          assistance_service: norm(res.assistance_service),
+        });
+      })
+      .catch(() => {
+        setOpts({ assistance_service: [] });
+      });
   }, []);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData({ 
-      ...formData, 
-      [name]: type === "checkbox" ? checked : value 
+    setFormData({
+      ...formData,
+      [name]: type === 'checkbox' ? checked : value,
     });
     setErrors((prev) => ({ ...prev, [name]: '' }));
   };
@@ -100,6 +108,7 @@ const Step2 = ({ formData, setFormData, nextStep, prevStep, visitType }) => {
     if (!formData.visitStation) newErrors.visitStation = 'Stasiun Kunjungan wajib diisi';
     if (!formData.visitPurpose) newErrors.visitPurpose = 'Tujuan Kunjungan wajib diisi';
     if (!formData.serviceType) newErrors.serviceType = 'Pilih Layanan Pendampingan';
+
     if (formData.visitDate && formData.endDate) {
       const visitDate = new Date(formData.visitDate);
       const endDate = new Date(formData.endDate);
@@ -110,22 +119,14 @@ const Step2 = ({ formData, setFormData, nextStep, prevStep, visitType }) => {
       } else {
         switch (visitType) {
           case 'regular':
-            if (diffDays !== 0) {
-              newErrors.endDate = 'Pengunjung regular hanya boleh memilih tanggal kunjungan 1 hari';
-            }
+            if (diffDays !== 0) newErrors.endDate = 'Pengunjung regular hanya boleh memilih 1 hari';
             break;
           case 'vip':
           case 'darurat':
-            if (diffDays > 2) {
-              newErrors.endDate = 'Masa berlaku untuk pengunjung VIP atau Darurat maksimal 3 hari';
-            }
+            if (diffDays > 2) newErrors.endDate = 'Maksimal 3 hari untuk VIP/Darurat';
             break;
           case 'vendor':
-            if (diffDays < 30 || diffDays > 365) {
-              newErrors.endDate = 'Masa berlaku untuk pengunjung Vendor harus antara 1 bulan hingga 1 tahun';
-            }
-            break;
-          case 'pelajar':
+            if (diffDays < 30 || diffDays > 365) newErrors.endDate = 'Vendor 1–12 bulan';
             break;
           default:
             break;
@@ -142,6 +143,8 @@ const Step2 = ({ formData, setFormData, nextStep, prevStep, visitType }) => {
     if (validateForm()) nextStep();
   };
 
+  const todayISO = new Date().toISOString().split('T')[0];
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-md border border-gray-300 max-w-4xl mx-auto">
       <h2 className="text-xl font-semibold mb-4 text-blue-600 flex items-center">
@@ -152,35 +155,35 @@ const Step2 = ({ formData, setFormData, nextStep, prevStep, visitType }) => {
         <FormField
           label="Nama Lengkap"
           name="fullName"
-          value={formData.fullName}
+          value={formData.fullName || ''}
           onChange={handleChange}
           error={errors.fullName}
         />
         <FormField
           label="Instansi/Perusahaan"
           name="company"
-          value={formData.company}
+          value={formData.company || ''}
           onChange={handleChange}
           error={errors.company}
         />
         <FormField
           label="Nama Penanggung Jawab (PIC)"
           name="picName"
-          value={formData.picName}
+          value={formData.picName || ''}
           onChange={handleChange}
           error={errors.picName}
         />
         <FormField
           label="Jabatan Penanggung Jawab"
           name="picPosition"
-          value={formData.picPosition}
+          value={formData.picPosition || ''}
           onChange={handleChange}
           error={errors.picPosition}
         />
         <FormField
           label="Nomor Handphone"
           name="phoneNumber"
-          value={formData.phoneNumber}
+          value={formData.phoneNumber || ''}
           onChange={handleChange}
           error={errors.phoneNumber}
         />
@@ -188,7 +191,7 @@ const Step2 = ({ formData, setFormData, nextStep, prevStep, visitType }) => {
           label="Email"
           name="email"
           type="email"
-          value={formData.email}
+          value={formData.email || ''}
           onChange={handleChange}
           error={errors.email}
         />
@@ -196,30 +199,29 @@ const Step2 = ({ formData, setFormData, nextStep, prevStep, visitType }) => {
           label="Tanggal Kunjungan"
           name="visitDate"
           type="date"
-          value={formData.visitDate}
+          value={formData.visitDate || ''}
           onChange={handleChange}
           error={errors.visitDate}
-          min={new Date().toISOString().split('T')[0]}
+          min={todayISO}
         />
         <FormField
           label="Selesai Kunjungan"
           name="endDate"
           type="date"
-          value={formData.endDate}
-          onChange={e => {
+          value={formData.endDate || ''}
+          onChange={(e) => {
             handleChange(e);
             setFormData({ ...formData, endDate: e.target.value, visitEndDate: e.target.value });
           }}
           error={errors.endDate}
-          min={formData.visitDate || new Date().toISOString().split('T')[0]}
+          min={formData.visitDate || todayISO}
         />
 
-        {/* SELECT Stasiun */}
         <FormField
           label="Stasiun Kunjungan"
           name="visitStation"
           type="select"
-          value={formData.visitStation}
+          value={formData.visitStation || ''}
           onChange={handleChange}
           error={errors.visitStation}
         >
@@ -240,12 +242,11 @@ const Step2 = ({ formData, setFormData, nextStep, prevStep, visitType }) => {
           error={errors.serviceType}
         >
           <option value="">Pilih Layanan</option>
-          <option value="akses-pintu">Akses Pintu Timur/Selatan saja</option>
-          <option value="vip">Penggunaan Ruang VIP saja</option>
-          <option value="protokol">Pendampingan Protokol saja</option>
-          <option value="akses-pintu-protokol">Akses Pintu + Pendampingan Protokoler</option>
-          <option value="vip-protokol">Ruang VIP + Pendampingan Protokoler</option>
-          <option value="akses-pintu-vip-protokol">Akses Pintu + Ruang VIP + Pendampingan Protokoler</option>
+          {opts.assistance_service.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
         </FormField>
 
         <div className="mb-4 md:col-span-2">
@@ -253,7 +254,7 @@ const Step2 = ({ formData, setFormData, nextStep, prevStep, visitType }) => {
             label="Tujuan Kunjungan"
             name="visitPurpose"
             type="textarea"
-            value={formData.visitPurpose}
+            value={formData.visitPurpose || ''}
             onChange={handleChange}
             error={errors.visitPurpose}
             rows="4"

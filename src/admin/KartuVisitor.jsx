@@ -1,4 +1,3 @@
-// src/admin/KartuVisitor.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { Icon } from "@iconify/react";
 import { useNavigate } from "react-router-dom";
@@ -20,9 +19,6 @@ const namaPetugas =
   localStorage.getItem("adminName") ||
   "Admin";
 
-/* =========================
- * Sinkron antar-tab
- * ========================= */
 function notifyDirtyCards() {
   try {
     localStorage.setItem("dirty:cards", String(Date.now()));
@@ -36,9 +32,7 @@ function notifyDirtyCards() {
   } catch (_) {}
 }
 
-/* =========================
- * PATCH untuk Riwayat (override kondisi di FE)
- * ========================= */
+
 const PATCH_KEY = "riwayat:patches";
 
 function saveRiwayatPatch(reference, kondisi) {
@@ -46,7 +40,7 @@ function saveRiwayatPatch(reference, kondisi) {
   try {
     const raw = localStorage.getItem(PATCH_KEY);
     const map = raw ? JSON.parse(raw) : {};
-    map[String(reference)] = kondisi; // simpan berdasarkan nomor pengajuan/reference
+    map[String(reference)] = kondisi; 
     localStorage.setItem(PATCH_KEY, JSON.stringify(map));
   } catch {}
 }
@@ -66,9 +60,7 @@ function broadcastRiwayatPatch(reference, kondisi) {
   } catch {}
 }
 
-/* =========================
- * ID MAP (per reference) untuk visitor_card_id & transaction_id
- * ========================= */
+
 const IDMAP_KEY = "cards:lastIssuedIDs";
 function loadIdMap() {
   try { return JSON.parse(localStorage.getItem(IDMAP_KEY) || "{}"); } catch { return {}; }
@@ -90,9 +82,6 @@ function getIdsForReference(reference) {
   return reference ? map[String(reference)] || {} : {};
 }
 
-/* =========================
- * Normalisasi & Pemetaan
- * ========================= */
 function normalizeConditionLabel(s) {
   const v = (s || "").toString().trim().toLowerCase();
   if (["rusak", "damage", "damaged", "broken"].includes(v)) return "Rusak";
@@ -127,7 +116,6 @@ const aksiColor = {
   "Belum diambil": "#6C757D",
 };
 
-// UI -> API
 function mapConditionToAPI(k) {
   const v = (k || "").toString().toLowerCase();
   if (v.includes("hilang")) return "lost";
@@ -135,7 +123,6 @@ function mapConditionToAPI(k) {
   return "good";
 }
 
-// API -> UI
 function mapApiConditionToLabel(raw) {
   const v = (raw ?? "").toString().trim().toLowerCase();
   if (!v) return undefined;
@@ -145,7 +132,6 @@ function mapApiConditionToLabel(raw) {
   return undefined;
 }
 
-// Ambil visitor_card_id dari berbagai kemungkinan field
 function findVisitorCardId(x) {
   return (
     x?.visitorCardId ||
@@ -158,9 +144,6 @@ function findVisitorCardId(x) {
   );
 }
 
-/* =========================
- * Meta Cache (persist kondisi/alasan/penanganan)
- * ========================= */
 const META_CACHE_KEY = "visitorCardMetaCache";
 
 function loadMetaCache() {
@@ -212,14 +195,11 @@ function cacheMeta(rowOrKey, meta) {
   saveMetaCache(cache);
 }
 
-/* =========================
- * Helper Resolusi visitor_card_id (dipakai Serah & Terima)
- * — SELALU ambil data fresh agar tidak ke-cached.
- * ========================= */
+
 async function resolveVisitorCardIdFromActives(hints = {}) {
   const { transactionId, refNo, cardNo } = hints;
   try {
-    const res = await getActiveCards({ ttl: 0 }); // anti-cache
+    const res = await getActiveCards({ ttl: 0 }); 
     const arr = Array.isArray(res?.data) ? res.data : res?.data?.data || [];
 
     const getRef = (x) => x?.reference_number || x?.reference || x?.ref_no || x?.ref || null;
@@ -254,9 +234,6 @@ async function resolveVisitorCardIdFromActives(hints = {}) {
   }
 }
 
-/* =========================
- * UI Bagian Kecil
- * ========================= */
 function Popup({ show, onClose, children, title }) {
   if (!show) return null;
   return (
@@ -325,14 +302,10 @@ function BoxPetugas({ label, value }) {
   );
 }
 
-/* =========================
- * Komponen Utama
- * ========================= */
 export default function KartuVisitor() {
-  const [dummyData, setDummyData] = useState([]); // gabungan active + approved
+  const [dummyData, setDummyData] = useState([]); 
   const [showPopup, setShowPopup] = useState(false);
   const [popupType, setPopupType] = useState("");
-  // GANTI: gunakan key stabil (bukan index)
   const [selectedKey, setSelectedKey] = useState(null);
 
   const [laporanKondisi, setLaporanKondisi] = useState("");
@@ -385,7 +358,6 @@ export default function KartuVisitor() {
     return `${String(d.getDate()).padStart(2, "0")} ${months[d.getMonth()]} ${d.getFullYear()}`;
   }
 
-  // map approved -> “Belum diambil”
   const mapApproved = (x) => {
     const nama =
       x.applicant_name || x.full_name || x.name || x.user_name || x.visitor_name || "-";
@@ -411,7 +383,7 @@ export default function KartuVisitor() {
       email,
       tanggalPinjam: formatISO(visitStart) || "",
       tanggalKembali: formatISO(visitEnd) || "",
-      kondisi: apiCond ?? "Baik", // default; akan di-apply cache
+      kondisi: apiCond ?? "Baik", 
       aksi: "Belum diambil",
       petugasSerah:
         x.performed_by_name ||
@@ -431,7 +403,6 @@ export default function KartuVisitor() {
     };
   };
 
-  // map active -> “Serahkan Kartu”
   const mapActive = (x) => {
     const nama =
       x.applicant_name || x.full_name || x.name || x.user_name || x.visitor_name || "-";
@@ -459,7 +430,7 @@ export default function KartuVisitor() {
       email,
       tanggalPinjam: formatISO(issuedAt) || "",
       tanggalKembali: formatISO(due) || "",
-      kondisi: apiCond ?? "Baik", // default; akan di-apply cache
+      kondisi: apiCond ?? "Baik", 
       aksi: "Serahkan Kartu",
       petugasSerah: issuer || namaPetugas,
       petugasPenyerah: issuer || namaPetugas,
@@ -472,7 +443,6 @@ export default function KartuVisitor() {
     };
   };
 
-  // Kunci unik untuk rekonsiliasi
   function rowKey(r) {
     return (
       r.transactionId ||
@@ -488,7 +458,6 @@ export default function KartuVisitor() {
     return (dummyData || []).find((r) => String(rowKey(r)) === String(key)) || null;
   }
 
-  // Rekonsiliasi kondisi lokal (jangan ketimpa "Baik" dari server)
   function reconcileKeepLocalKondisi(prevList, nextList) {
     const mapPrev = new Map();
     (prevList || []).forEach((p) => {
@@ -551,7 +520,6 @@ export default function KartuVisitor() {
 
   useEffect(() => {
     reloadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const exportLaporan = async () => {
@@ -599,7 +567,6 @@ export default function KartuVisitor() {
     }
   };
 
-  // ==== Open Popups (gunakan key stabil) ====
   const openSerahPopup = (idx) => {
     setSelectedKey(rowKey(dummyData[idx]));
     setPopupType("serah");
@@ -626,9 +593,6 @@ export default function KartuVisitor() {
     setShowPopup(true);
   };
 
-  /* =========================
-   * Serahkan Kartu -> Approved => Active
-   * ========================= */
   const handleKonfirmasiSerah = async () => {
     const row = pickRowByKey(selectedKey);
     if (!row) return;
@@ -678,7 +642,6 @@ export default function KartuVisitor() {
         if (fallbackId) resolvedVisitorCardId = fallbackId;
       }
 
-      // Simpan ke IDMap berdasarkan reference
       const refForIdMap = row?.referenceNumber || row?.nomorPengajuan;
       setIdsForReference(refForIdMap, {
         visitor_card_id: resolvedVisitorCardId || null,
@@ -718,6 +681,7 @@ export default function KartuVisitor() {
         window.dispatchEvent(
           new CustomEvent("dashboard:changed", { detail: { type: "issued" } })
         );
+
         window.dispatchEvent(
           new CustomEvent("dashboard:increment", {
             detail: { field: "keluarHariIni", delta: 1 },
@@ -750,10 +714,6 @@ export default function KartuVisitor() {
     }
   };
 
-  /* =========================
-   * Terima Kartu -> Active => Selesai
-   * (utamakan IDMap -> fallback resolver)
-   * ========================= */
   const handleKonfirmasiTerima = async () => {
     const row = pickRowByKey(selectedKey);
     if (!row) return;
@@ -764,7 +724,6 @@ export default function KartuVisitor() {
 
     let visitorCardId = findVisitorCardId(row);
 
-    // Ambil dari IDMap jika tersedia
     const idFromMap = getIdsForReference(refNo);
     if (!visitorCardId && idFromMap?.visitor_card_id) visitorCardId = idFromMap.visitor_card_id;
     if (!transactionId && idFromMap?.transaction_id) transactionId = idFromMap.transaction_id;
@@ -818,15 +777,13 @@ export default function KartuVisitor() {
         }
       }
 
-      // --- PATCH: paksa kondisi konsisten di Riwayat ---
       const normalized = normalizeConditionLabel(row.kondisi);
       const referenceForPatch =
         refNo || row?.nomorPengajuan || row?.referenceNumber;
       saveRiwayatPatch(referenceForPatch, normalized);
       broadcastRiwayatPatch(referenceForPatch, normalized);
-      // --------------------------------------------------
 
-      // Statistik & meta
+
       window.dispatchEvent(
         new CustomEvent("dashboard:changed", { detail: { type: "returned" } })
       );
@@ -873,7 +830,6 @@ export default function KartuVisitor() {
         penanganan: updatedRow.penanganan,
       });
 
-      // Hapus baris berdasarkan key stabil
       setDummyData((prev) => prev.filter((r) => String(rowKey(r)) !== String(selectedKey)));
       setShowPopup(false);
 
@@ -882,7 +838,6 @@ export default function KartuVisitor() {
         notifyDirtyCards();
       } catch {}
 
-      // Opsional: bersihkan IDMap untuk reference ini
       try {
         if (refNo) {
           const map = loadIdMap();
@@ -903,9 +858,6 @@ export default function KartuVisitor() {
     }
   };
 
-  /* =========================
-   * Simpan Laporan (Rusak/Hilang)
-   * ========================= */
   const handleSimpanLaporan = async () => {
     const row = pickRowByKey(selectedKey);
     if (!row) return;
@@ -946,7 +898,6 @@ export default function KartuVisitor() {
           const newVisitorCardId =
             tx.visitor_card_id || tx.card_id || tx.card?.id || tx.visitor_card?.id || null;
 
-          // Simpan ID ke IDMap juga agar “Terima” setelahnya aman
           setIdsForReference(refNo, {
             visitor_card_id: newVisitorCardId || null,
             transaction_id: transactionId || null,
@@ -1004,7 +955,6 @@ export default function KartuVisitor() {
         penanganan: laporanPenanganan,
       });
 
-      // --- PATCH: paksa kondisi konsisten di Riwayat ---
       const refForPatch = refNo || row?.nomorPengajuan || row?.referenceNumber;
       const normalized = normalizeConditionLabel(laporanKondisi);
       saveRiwayatPatch(refForPatch, normalized);
@@ -1067,9 +1017,6 @@ export default function KartuVisitor() {
     }
   };
 
-  /* =========================
-   * Render
-   * ========================= */
   const selectedRow = pickRowByKey(selectedKey);
 
   return (
@@ -1146,7 +1093,6 @@ export default function KartuVisitor() {
         className="flex-1 flex flex-col px-2 md:px-12 py-10 transition-all"
         style={{ marginLeft: 360, minHeight: "100vh", width: "100%" }}
       >
-        {/* Header Atas */}
         <div className="flex gap-8 mb-10 flex-wrap">
           <div
             className="w-full max-w-[900px] flex items-center bg-white rounded-[20px] shadow-md px-8 py-4 relative mx-auto"
@@ -1155,7 +1101,6 @@ export default function KartuVisitor() {
             <span className="font-poppins font-semibold text-[24px] text-[#474646]">
               Kartu Visitor
             </span>
-            {/* Profile + Dropdown Logout */}
             <div
               className="relative ml-auto"
               style={{ minWidth: 200 }}

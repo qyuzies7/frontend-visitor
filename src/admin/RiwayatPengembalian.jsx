@@ -1,4 +1,3 @@
-// src/admin/RiwayatPengembalian.jsx
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Icon } from "@iconify/react";
@@ -13,7 +12,6 @@ import {
   getVerificationDetail,
 } from "../api";
 
-/* ===== Utils ===== */
 function formatTanggal(str) {
   const months = [
     "Januari","Februari","Maret","April","Mei","Juni",
@@ -25,6 +23,38 @@ function formatTanggal(str) {
   return `${String(d.getDate()).padStart(2, "0")} ${months[d.getMonth()]} ${d.getFullYear()}`;
 }
 const val = (v, f = "-") => (v == null || v === "" ? f : String(v));
+
+function prettyAssistanceLabel(raw) {
+  if (!raw) return "-";
+  const MAP = {
+    akses_pintu: "Hanya akses pintu timur/selatan",
+    vip: "Hanya penggunaan ruang VIP",
+    protokol: "Hanya pendampingan protokoler",
+    protokoler: "Hanya pendampingan protokoler",
+    akses_pintu_protokol: "Akses pintu + pendampingan protokoler",
+    "akses-pintu-protokol": "Akses pintu + pendampingan protokoler",
+    pintu_plus_protokoler: "Akses pintu + pendampingan protokoler",
+    vip_protokol: "Ruang VIP + pendampingan protokoler",
+    "vip-protokol": "Ruang VIP + pendampingan protokoler",
+    akses_pintu_vip_protokol: "Akses pintu + ruang VIP + pendampingan protokoler",
+    "akses-pintu-vip-protokol": "Akses pintu + ruang VIP + pendampingan protokoler",
+    vip_plus_pendampingan_protokoler: "Ruang VIP + pendampingan protokoler",
+    akses_pintu_plus_pendampingan_protokoler: "Akses pintu + pendampingan protokoler",
+  };
+  const v = String(raw).trim();
+  if (MAP[v]) return MAP[v];
+
+  let s = v.replace(/[_-]+/g, " ").trim();
+  s = s.replace(/\bplus\b/gi, "+");
+  s = s.replace(/\s*\+\s*/g, " + ");
+  s = s
+    .replace(/\bvip\b/gi, "VIP")
+    .replace(/\bprotokol(er)?\b/gi, "pendampingan protokoler")
+    .replace(/\bakses pintu\b/gi, "Akses pintu")
+    .replace(/\bruang vip\b/gi, "Ruang VIP");
+  s = s.replace(/^\s*\w/, (c) => c.toUpperCase()).replace(/\s{2,}/g, " ").trim();
+  return s || "-";
+}
 
 function normalizeCondition(c) {
   const raw = (c ?? "").toString().trim().toLowerCase();
@@ -45,12 +75,10 @@ function toFileURL(v) {
   return `${ORIGIN}/${finalPath}`;
 }
 
-// treat "-", "—", "–", "" as empty  <-- TAMBAHAN
 const isBlank = (v) =>
   v == null || String(v).trim() === "" || ["-", "—", "–"].includes(String(v).trim());
 const pickNonBlank = (...vals) => vals.find((v) => !isBlank(v));
 
-/* ====== PATCH & META CACHE ====== */
 const PATCH_KEY = "riwayat:patches";
 const META_CACHE_KEY = "visitorCardMetaCache";
 
@@ -87,7 +115,6 @@ function getMetaForRow(row) {
   return { kondisi: row?.kondisi || "Baik", alasan: "", penanganan: "" };
 }
 
-/* === INSTANSI CACHE (untuk enrichment cepat) === */
 const INSTANSI_CACHE_KEY = "riwayat:instansiCache";
 function loadInstansiCache() {
   try { return JSON.parse(localStorage.getItem(INSTANSI_CACHE_KEY) || "{}"); } catch { return {}; }
@@ -104,7 +131,6 @@ function getInstansiFromCache(key) {
   return m?.[key];
 }
 
-/* ==== Ambil Instansi dari berbagai kemungkinan field ==== */
 function resolveInstansi(x) {
   const n = (obj, ...paths) => {
     for (const p of paths) { if (!obj) return undefined; obj = obj[p]; }
@@ -125,7 +151,6 @@ function resolveInstansi(x) {
     x?.applicant_organization ||
     x?.borrower_company ||
     x?.visitor_company ||
-    // nested: application / transaction / card_transaction / visitor / user / visit / visitor_card / card
     n(x, "application", "instansi") ||
     n(x, "application", "organization") ||
     n(x, "application", "organization_name") ||
@@ -149,7 +174,70 @@ function resolveInstansi(x) {
   return cand ?? "-";
 }
 
-/* ===== Small Popup (reusable) ===== */
+function getNested(obj, ...paths) {
+  for (const p of paths) { if (!obj) return undefined; obj = obj[p]; }
+  return obj;
+}
+function resolvePICName(x) {
+  return (
+    x?.pic_name || x?.penanggung_jawab || x?.person_in_charge ||
+    x?.applicant_pic || getNested(x, "application", "pic_name") ||
+    getNested(x, "application", "penanggung_jawab") ||
+    getNested(x, "visit", "pic_name") || "-"
+  );
+}
+function resolvePICJabatan(x) {
+  return (
+    x?.pic_position || x?.pic_title || x?.jabatan_pic || x?.job_title_pic || x?.jabatan_penanggung_jawab ||
+    getNested(x, "application", "pic_position") || getNested(x, "application", "pic_title") ||
+    getNested(x, "visit", "pic_position") || getNested(x, "visit", "pic_title") || "-"
+  );
+}
+function resolveLayananPendampingan(x) {
+  const raw =
+    x?.assistance_service || x?.layanan_pendampingan ||
+    getNested(x, "application", "assistance_service") ||
+    getNested(x, "application", "layanan_pendampingan") ||
+    getNested(x, "visit", "assistance_service") ||
+    getNested(x, "visit", "layanan_pendampingan");
+  return prettyAssistanceLabel(raw);
+}
+function resolveAccessDetail(x) {
+  const door =
+    x?.accessDoor || x?.access_door || x?.door || x?.gate || x?.pintu ||
+    getNested(x, "application", "access_door") || getNested(x, "visit", "access_door") || "-";
+  const time =
+    x?.accessTime || x?.access_time || x?.time || x?.access_at ||
+    getNested(x, "application", "access_time") || getNested(x, "visit", "access_time") || "-";
+  const purpose =
+    x?.accessPurpose || x?.access_purpose || x?.purpose_access ||
+    getNested(x, "application", "access_purpose") || getNested(x, "visit", "access_purpose") ||
+    x?.purpose || x?.visit_purpose || "-";
+  const protCount =
+    x?.protokolerCount || x?.protokoler_count || x?.escort_count ||
+    getNested(x, "application", "protokoler_count") || getNested(x, "visit", "protokoler_count") || "-";
+  const vehicleType =
+    x?.vehicleType || x?.vehicle_type || x?.kendaraan || x?.vehicleCountType ||
+    getNested(x, "application", "vehicle_type") || getNested(x, "visit", "vehicle_type") || "-";
+  const plate =
+    x?.vehiclePlate || x?.vehicle_plate || x?.nopol || x?.license_plate ||
+    getNested(x, "application", "vehicle_plate") || getNested(x, "visit", "vehicle_plate") || "-";
+
+  const escortRaw =
+    x?.needProtokolerEscort ?? x?.need_protokoler_escort ?? x?.escort_needed ??
+    getNested(x, "application", "need_protokoler_escort") ?? getNested(x, "visit", "need_protokoler_escort");
+  const escort = (() => {
+    if (typeof escortRaw === "boolean") return escortRaw ? "Ya" : "Tidak";
+    const s = String(escortRaw ?? "").trim().toLowerCase();
+    if (s === "true" || s === "ya" || s === "y" || s === "1") return "Ya";
+    if (s === "false" || s === "tidak" || s === "t" || s === "0") return "Tidak";
+    if (s === "") return "-";
+    return s;
+  })();
+
+  return { door, time, purpose, protCount, vehicleType, plate, escort };
+}
+
 function Popup({ show, onClose, title, children }) {
   if (!show) return null;
   return (
@@ -170,7 +258,6 @@ function Popup({ show, onClose, title, children }) {
   );
 }
 
-/* ===== Component ===== */
 export default function RiwayatPengembalian() {
   const [showDropdown, setShowDropdown] = useState(false);
   const adminName = localStorage.getItem("adminName") || "Admin";
@@ -179,13 +266,11 @@ export default function RiwayatPengembalian() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
-  // detail modal states
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailErr, setDetailErr] = useState("");
   const [detailData, setDetailData] = useState(null);
 
-  // laporan (read-only) untuk Rusak/Hilang
   const [laporanOpen, setLaporanOpen] = useState(false);
   const [laporanData, setLaporanData] = useState({
     nama: "-",
@@ -214,7 +299,6 @@ export default function RiwayatPengembalian() {
     navigate("/admin");
   };
 
-  /* ---- LOAD DATA ---- */
   const load = async () => {
     setLoading(true);
     setErr("");
@@ -256,7 +340,6 @@ export default function RiwayatPengembalian() {
           reference || x.reference_number || n(x, "visitor_card", "reference_number") ||
           n(x, "card_transaction", "reference_number") || null;
 
-        // Mapping petugas: HAPUS default "—", biarkan undefined bila kosong
         const petugasPenerima =
           x.petugasPenerima || x.petugas_penerima || x.returned_by_name || x.returned_by ||
           x.received_by_name || x.receiver_name || n(x, "card_transaction", "returned_by_name") ||
@@ -290,24 +373,19 @@ export default function RiwayatPengembalian() {
         };
       });
 
-      // Render cepat dulu
       setRows(applyPatchToRows(mapped));
 
-      // ===== Enrichment instansi (eager) =====
       (async () => {
-        // kandidat baris yang masih butuh instansi
         const need = mapped.filter(r => (!r.instansi || r.instansi === "-") && (r.reference || r.nomorPengajuan));
 
-        // 1) isi dari cache kalau ada
         need.forEach(r => {
           const ref = r.reference || r.nomorPengajuan;
-          const cached = ref ? getInstansiFromCache(String(ref)) : null;
+          const cached = getInstansiFromCache(String(ref));
           if (cached) {
             setRows(prev => prev.map(p => ((p.reference || p.nomorPengajuan) === ref ? { ...p, instansi: cached } : p)));
           }
         });
 
-        // 2) fetch detail untuk sisanya (dengan limiter sederhana)
         const toFetch = need.filter(r => {
           const ref = r.reference || r.nomorPengajuan;
           return ref && !getInstansiFromCache(String(ref));
@@ -329,7 +407,7 @@ export default function RiwayatPengembalian() {
                   ((p.reference || p.nomorPengajuan) === ref ? { ...p, instansi: detInstansi } : p)
                 ));
               }
-            } catch { /* abaikan error per-item */ }
+            } catch {}
           }
         }
         await Promise.all([...Array(Math.min(maxConcurrent, toFetch.length))].map(worker));
@@ -421,7 +499,6 @@ export default function RiwayatPengembalian() {
     setDetailData(null);
     setDetailOpen(true);
 
-    // gunakan pickNonBlank agar placeholder tidak mengunci
     const resolvePetugasPenerima = (rawObj) =>
       pickNonBlank(
         row?.petugasPenerima,
@@ -467,7 +544,6 @@ export default function RiwayatPengembalian() {
         const raw = res?.data?.data || res?.data || {};
         const nama = raw.applicant_name || raw.full_name || raw.name || row?.nama || "-";
         const instansi = resolveInstansi(raw);
-        const noKtp = raw.national_id || raw.nik || "-";
         const email = raw.email || raw.applicant_email || "-";
         const tanggal = raw.visit_date || raw.visit_start_date || raw.date || row?.tanggalPinjam || null;
         const selesaiKunjungan = raw.visit_end_date || raw.end_date || raw.due_date || row?.tanggalKembali || null;
@@ -475,6 +551,11 @@ export default function RiwayatPengembalian() {
         const handphone = raw.phone || raw.phone_number || raw.applicant_phone || "-";
         const stasiun = typeof raw.station === "object" ? (raw.station?.name || "-") : (raw.station_name || raw.station || "-");
         const tujuan = raw.purpose || raw.visit_purpose || raw.reason || raw.description || "-";
+
+        const picName = resolvePICName(raw);
+        const picTitle = resolvePICJabatan(raw);
+        const layananPendampingan = resolveLayananPendampingan(raw);
+        const access = resolveAccessDetail(raw);
 
         const docRaw =
           raw.document_url || raw.attachment_url || raw.document_path || raw.document ||
@@ -495,9 +576,17 @@ export default function RiwayatPengembalian() {
         const kondisi = resolveKondisi(raw);
 
         setDetailData({
-          nama, instansi, noKtp, email, tanggal, selesaiKunjungan, noPengajuan, handphone,
+          nama, instansi, email, tanggal, selesaiKunjungan, noPengajuan, handphone,
           stasiun, tujuan, dokumenUrl, dokumenNama, status, raw,
           petugasPenerima, petugasPenyerah, tanggalTerima, tanggalSerah, kondisi,
+          picName, picTitle, layananPendampingan,
+          accessDoor: access.door,
+          accessTime: access.time,
+          accessPurpose: access.purpose,
+          protokolerCount: access.protCount,
+          vehicleType: access.vehicleType,
+          vehiclePlate: access.plate,
+          needProtokolerEscort: access.escort,
         });
       } catch (e) {
         setDetailErr(e?.response?.data?.message || e?.message || "Gagal memuat detail.");
@@ -505,12 +594,10 @@ export default function RiwayatPengembalian() {
       return;
     }
 
-    // fallback: gunakan row.raw / row data
     try {
       const raw = row?.raw || row || {};
       const nama = raw.applicant_name || raw.full_name || raw.name || row?.nama || "-";
       const instansi = resolveInstansi(raw);
-      const noKtp = raw.national_id || raw.nik || "-";
       const email = raw.email || raw.applicant_email || "-";
       const tanggal = raw.visit_date || raw.visit_start_date || raw.date || row?.tanggalPinjam || null;
       const selesaiKunjungan = raw.visit_end_date || raw.end_date || raw.due_date || row?.tanggalKembali || null;
@@ -518,6 +605,11 @@ export default function RiwayatPengembalian() {
       const handphone = raw.phone || raw.phone_number || raw.applicant_phone || "-";
       const stasiun = (raw.station && (typeof raw.station === "string" ? raw.station : raw.station.name)) || raw.station_name || row?.stasiun || "-";
       const tujuan = raw.purpose || raw.visit_purpose || raw.reason || raw.description || "-";
+
+      const picName = resolvePICName(raw);
+      const picTitle = resolvePICJabatan(raw);
+      const layananPendampingan = resolveLayananPendampingan(raw);
+      const access = resolveAccessDetail(raw);
 
       const docRaw =
         raw.document_url || raw.attachment_url || raw.document_path || raw.document ||
@@ -541,9 +633,17 @@ export default function RiwayatPengembalian() {
       );
 
       setDetailData({
-        nama, instansi, noKtp, email, tanggal, selesaiKunjungan, noPengajuan, handphone,
+        nama, instansi, email, tanggal, selesaiKunjungan, noPengajuan, handphone,
         stasiun, tujuan, dokumenUrl, dokumenNama, status, raw,
         petugasPenerima, petugasPenyerah, tanggalTerima, tanggalSerah, kondisi,
+        picName, picTitle, layananPendampingan,
+        accessDoor: access.door,
+        accessTime: access.time,
+        accessPurpose: access.purpose,
+        protokolerCount: access.protCount,
+        vehicleType: access.vehicleType,
+        vehiclePlate: access.plate,
+        needProtokolerEscort: access.escort,
       });
     } catch (e) {
       setDetailErr("Gagal menampilkan detail.");
@@ -563,10 +663,8 @@ export default function RiwayatPengembalian() {
     }
   };
 
-  /* ---- Popup Laporan Rusak/Hilang ---- */
   const openLaporanReadonly = async (row) => {
     const meta = getMetaForRow(row);
-    // 1) isi cepat dari row/raw
     let instansiNow =
       (row?.instansi && row.instansi !== "-") ? row.instansi : resolveInstansi(row?.raw || {});
     setLaporanData({
@@ -579,7 +677,6 @@ export default function RiwayatPengembalian() {
     });
     setLaporanOpen(true);
 
-    // 2) fallback ke API detail jika masih "-"
     if (!instansiNow || instansiNow === "-") {
       const ref = row?.reference || row?.nomorPengajuan;
       if (ref) {
@@ -590,9 +687,7 @@ export default function RiwayatPengembalian() {
           if (fromDetail && fromDetail !== "-") {
             setLaporanData((prev) => ({ ...prev, instansi: fromDetail }));
           }
-        } catch {
-          // biarkan "-"
-        }
+        } catch {}
       }
     }
   };
@@ -764,16 +859,14 @@ export default function RiwayatPengembalian() {
                     </div>
                   </div>
 
-                  {/* Kondisi Kartu dihapus sesuai permintaan */}
-
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
                     <div>
                       <div className="text-sm text-[#666] mb-1">Instansi</div>
                       <div className="font-poppins font-medium">{detailData.instansi || "-"}</div>
                     </div>
                     <div>
-                      <div className="text-sm text-[#666] mb-1">Nomor KTP</div>
-                      <div className="font-poppins font-medium">{detailData.noKtp || "-"}</div>
+                      <div className="text-sm text-[#666] mb-1">Nama Penanggung Jawab (PIC)</div>
+                      <div className="font-poppins font-medium">{detailData.picName || "-"}</div>
                     </div>
 
                     <div>
@@ -786,6 +879,15 @@ export default function RiwayatPengembalian() {
                     </div>
 
                     <div>
+                      <div className="text-sm text-[#666] mb-1">Jabatan Penanggung Jawab</div>
+                      <div className="font-poppins font-medium">{detailData.picTitle || "-"}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-[#666] mb-1">Layanan Pendampingan</div>
+                      <div className="font-poppins font-medium">{detailData.layananPendampingan || "-"}</div>
+                    </div>
+
+                    <div>
                       <div className="text-sm text-[#666] mb-1">Tanggal Kunjungan</div>
                       <div className="font-poppins font-medium">{detailData.tanggal ? formatTanggal(detailData.tanggal) : "-"}</div>
                     </div>
@@ -794,14 +896,18 @@ export default function RiwayatPengembalian() {
                       <div className="font-poppins font-medium">{detailData.selesaiKunjungan ? formatTanggal(detailData.selesaiKunjungan) : "-"}</div>
                     </div>
 
-                    <div className="md:col-span-1">
+                    <div>
                       <div className="text-sm text-[#666] mb-1">Stasiun</div>
                       <div className="font-poppins font-medium">{detailData.stasiun || "-"}</div>
                       {detailData.dokumenUrl && (
                         <div className="mt-3">
                           <div className="text-sm text-[#666] mb-1">Dokumen</div>
                           <div className="text-sm">
-                            <a href="#" onClick={(e) => { e.preventDefault(); handleOpenDocument(detailData.raw?.document_path || detailData.dokumenUrl); }} style={{ textDecoration: "underline", color: "#1E3A8A", fontWeight: 600 }}>
+                            <a
+                              href="#"
+                              onClick={(e) => { e.preventDefault(); handleOpenDocument(detailData.raw?.document_path || detailData.dokumenUrl); }}
+                              style={{ textDecoration: "underline", color: "#1E3A8A", fontWeight: 600 }}
+                            >
                               Lihat
                             </a>
                           </div>
@@ -809,16 +915,48 @@ export default function RiwayatPengembalian() {
                       )}
                     </div>
 
-                    <div className="md:col-span-1">
+                    <div>
                       <div className="text-sm text-[#666] mb-1">Tujuan</div>
                       <div className="font-poppins font-medium">{detailData.tujuan || "-"}</div>
                     </div>
                   </div>
 
-                  <div style={{ height: 1, background: "#E6E6E9", margin: "8px 0 16px 0" }} />
+                  <div style={{ height: 1, background: "#E6E6E9", margin: "10px 0 16px 0" }} />
 
-                  {/* Petugas & Tanggal */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                    <div>
+                      <div className="text-sm text-[#666] mb-1">Pintu yang Diajukan</div>
+                      <div className="font-poppins font-medium">{detailData.accessDoor || "-"}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-[#666] mb-1">Waktu Akses</div>
+                      <div className="font-poppins font-medium">{detailData.accessTime || "-"}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-[#666] mb-1">Tujuan Akses</div>
+                      <div className="font-poppins font-medium">{detailData.accessPurpose || "-"}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-[#666] mb-1">Jumlah Pendamping Protokoler</div>
+                      <div className="font-poppins font-medium">{detailData.protokolerCount || "-"}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-[#666] mb-1">Jumlah & Jenis Kendaraan</div>
+                      <div className="font-poppins font-medium">{detailData.vehicleType || "-"}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-[#666] mb-1">Nomor Polisi Kendaraan</div>
+                      <div className="font-poppins font-medium">{detailData.vehiclePlate || "-"}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-[#666] mb-1">Pendampingan Protokoler</div>
+                      <div className="font-poppins font-medium">{detailData.needProtokolerEscort || "-"}</div>
+                    </div>
+                  </div>
+
+                  <div style={{ height: 1, background: "#E6E6E9", margin: "10px 0 16px 0" }} />
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-1">
                     <div>
                       <div className="text-sm text-[#666] mb-1">Petugas Penerima</div>
                       <div className="font-poppins font-medium">
@@ -858,7 +996,7 @@ export default function RiwayatPengembalian() {
         </div>
       )}
 
-      {/* Popup Laporan Read-only (Rusak/Hilang) */}
+      {/* Popup Laporan Read-only */}
       <Popup show={laporanOpen} onClose={() => setLaporanOpen(false)} title="Laporan Kartu Rusak/Hilang">
         <div className="rounded-[10px] overflow-hidden mb-4" style={{ background: "rgba(100,115,175,0.07)", border: "1px solid rgba(208,205,205,0.56)" }}>
           <div className="px-4 pt-3 pb-2">

@@ -7,6 +7,7 @@ import {
 } from "react-router-dom";
 
 import LandingPage from "./pages/LandingPage";
+import AttentionPage from "./pages/AttentionPage";
 import MultiStepForm from "./pages/MultiStepForm";
 import CekStatus from "./pages/CekStatus";
 import HasilCek from "./pages/HasilCek";
@@ -35,14 +36,15 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<LandingPage />} />
-        <Route path="/apply" element={<MultiStepForm />} />
+        <Route path="/apply/attention" element={<AttentionPage />} />
+        <Route path="/apply/step-1" element={<MultiStepForm />} />
+        <Route path="/apply" element={<Navigate to="/apply/step-1" replace />} />
         <Route path="/status" element={<CekStatus />} />
         <Route path="/status/approved" element={<HasilCek />} />
         <Route path="/status/rejected" element={<HasilTolak />} />
         <Route path="/status/processing" element={<HasilProses />} />
 
         <Route path="/admin" element={<AdminLogin />} />
-
         <Route
           path="/admin/dashboard"
           element={
@@ -75,7 +77,6 @@ function App() {
             </RequireAuth>
           }
         />
-
         <Route
           path="/admin/detail/:reference"
           element={
@@ -84,7 +85,6 @@ function App() {
             </RequireAuth>
           }
         />
-
         <Route
           path="/admin/form-detail"
           element={

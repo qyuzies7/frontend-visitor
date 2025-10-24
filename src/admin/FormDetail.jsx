@@ -1,10 +1,8 @@
-// src/admin/FormDetail.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import kaiLogo from "../assets/KAI-logo.png";
 
-// API
 import {
   getVerificationDetail,
   approveVerification,
@@ -14,9 +12,6 @@ import {
   filenameFromHeaders,
 } from "../api";
 
-/* =========================
- * Helpers
- * ========================= */
 
 function normalizeStatusLabel(s) {
   const v = (s || "").toString().toLowerCase();
@@ -59,14 +54,43 @@ function toFileURL(v) {
   return `${ORIGIN.replace(/\/+$/,"")}/${finalPath}`;
 }
 
+const ASSISTANCE_LABELS = {
+  akses_pintu: "Hanya akses pintu timur/selatan",
+  vip: "Hanya penggunaan ruang VIP",
+  protokol: "Hanya pendampingan protokoler",
+  protokoler: "Hanya pendampingan protokoler",
+  "akses_pintu_protokol": "Akses pintu + pendampingan protokoler",
+  "akses-pintu-protokol": "Akses pintu + pendampingan protokoler",
+  "pintu_plus_protokoler": "Akses pintu + pendampingan protokoler",
+  "vip_protokol": "Ruang VIP + pendampingan protokoler",
+  "vip-protokol": "Ruang VIP + pendampingan protokoler",
+  "akses_pintu_vip_protokol": "Akses pintu + ruang VIP + pendampingan protokoler",
+  "akses-pintu-vip-protokol": "Akses pintu + ruang VIP + pendampingan protokoler",
+  "vip_plus_pendampingan_protokoler": "Ruang VIP + pendampingan protokoler",
+  "akses_pintu_plus_pendampingan_protokoler": "Akses pintu + pendampingan protokoler",
+};
+function prettyAssistanceLabel(raw) {
+  if (!raw) return "-";
+  const v = String(raw).trim();
+  if (ASSISTANCE_LABELS[v]) return ASSISTANCE_LABELS[v];
+
+  let s = v.replace(/[_-]+/g, " ").trim();
+  s = s.replace(/\bplus\b/gi, "+");
+  s = s.replace(/\s*\+\s*/g, " + ");
+  s = s
+    .replace(/\bvip\b/gi, "VIP")
+    .replace(/\bprotokol(er)?\b/gi, "pendampingan protokoler")
+    .replace(/\bakses pintu\b/gi, "Akses pintu")
+    .replace(/\bruang vip\b/gi, "Ruang VIP");
+  s = s.replace(/^\s*\w/, (c) => c.toUpperCase());
+  return s.replace(/\s{2,}/g, " ").trim();
+}
+
 const adminNameFromLS =
   localStorage.getItem("adminName") ||
   localStorage.getItem("namaPetugas") ||
   "Admin";
 
-/* =========================
- * Small Modal (popup kecil)
- * ========================= */
 function SmallModal({ open, onClose, title, icon, iconColor = "#fff", children }) {
   if (!open) return null;
   return (
@@ -88,7 +112,6 @@ function SmallModal({ open, onClose, title, icon, iconColor = "#fff", children }
               {title}
             </span>
           </div>
-          {/* Close (X) DIHILANGKAN SESUAI PERMINTAAN */}
         </div>
         <div className="px-6 py-6">{children}</div>
       </div>
@@ -96,9 +119,6 @@ function SmallModal({ open, onClose, title, icon, iconColor = "#fff", children }
   );
 }
 
-/* =========================
- * Component
- * ========================= */
 
 export default function FormDetail() {
   const navigate = useNavigate();
@@ -116,17 +136,29 @@ export default function FormDetail() {
   const [detail, setDetail] = useState({
     nama: "-",
     instansi: "-",
-    noKtp: "-",
     email: "-",
     tanggal: "-",
-    dokumenNama: "-",
-    dokumenUrl: "",
-    dokumenPath: "",
-    handphone: "-",
-    stasiun: "-",
     selesaiKunjungan: "-",
     noPengajuan: reference || "-",
     tujuan: "-",
+    handphone: "-",
+    stasiun: "-",
+    dokumenNama: "-",
+    dokumenUrl: "",
+    dokumenPath: "",
+
+    picNama: "-",
+    picJabatan: "-",
+    layananPendampingan: "-",
+
+    accessDoor: "-",
+    accessTime: "-",
+    accessPurpose: "-",
+    protokolerCount: "-",
+    vehicleType: "-",
+    vehiclePlate: "-",
+    needProtokolerEscort: "-", 
+
     statusLabel: "Menunggu",
     catatan: "",
     _filenameResolved: false,
@@ -155,7 +187,6 @@ export default function FormDetail() {
         const nama = raw.applicant_name || raw.full_name || raw.name || "-";
         const instansi =
           raw.organization || raw.company || raw.institution || raw.agency || "-";
-        const noKtp = raw.national_id || raw.nik || "-";
         const email = raw.email || raw.applicant_email || "-";
         const tanggal = formatTanggalIndo(
           raw.visit_date || raw.visit_start_date || raw.date
@@ -179,29 +210,91 @@ export default function FormDetail() {
           raw.document_path ||
           raw.document ||
           (Array.isArray(raw.documents) ? (raw.documents[0]?.url || raw.documents[0]) : "");
-
         const dokumenUrl = docRaw ? toFileURL(docRaw) : "";
         const dokumenNama =
           raw.document_original_name || raw.original_name || getFilenameFromUrl(docRaw, "-");
+
+        const picNama =
+          raw.pic_name || raw.pic || raw.person_in_charge || raw.nama_pic || "-";
+        const picJabatan =
+          raw.pic_position || raw.pic_title || raw.jabatan_pic || "-";
+
+        const layananPendampinganRaw =
+          raw.assistance_service ||
+          raw.service_type || 
+          raw.layanan_pendampingan ||
+          raw.layananPendampingan ||
+          "-";
+        const layananPendampingan = prettyAssistanceLabel(layananPendampinganRaw);
+
+        const accessDoor =
+          raw.access_door || raw.accessDoor || raw.pintu || "-";
+        const accessTime =
+          raw.access_time || raw.accessTime || raw.waktu_akses || raw.jam_akses || "-";
+        const accessPurpose =
+          raw.access_purpose || raw.accessPurpose || raw.tujuan_akses || "-";
+        const protokolerCount =
+          raw.protokoler_count ||
+          raw.protokolerCount ||
+          raw.jumlah_pendamping_protokoler ||
+          "-";
+        const vehicleType =
+          raw.vehicle_type ||
+          raw.vehicleType ||
+          raw.jumlah_jenis_kendaraan ||
+          "-";
+        const vehiclePlate =
+          raw.vehicle_plate ||
+          raw.vehiclePlate ||
+          raw.nopol ||
+          raw.nomor_polisi ||
+          "-";
+        const needProtokolerEscortRaw =
+          raw.need_protokoler_escort ||
+          raw.needProtokolerEscort ||
+          raw.pendampingan_protokoler ||
+          raw.protokoler ||
+          "";
+        const needProtokolerEscort =
+          String(needProtokolerEscortRaw).toLowerCase() === "true" ||
+          String(needProtokolerEscortRaw).toLowerCase() === "ya" ||
+          needProtokolerEscortRaw === 1
+            ? "Ya"
+            : needProtokolerEscortRaw === "" || needProtokolerEscortRaw == null
+            ? "-"
+            : "Tidak";
 
         const statusLabel = normalizeStatusLabel(raw.status);
         const catatan = raw.approval_note || raw.note || raw.rejection_reason || "";
 
         if (!mounted) return;
         setDetail({
+          // data diri
           nama,
           instansi,
-          noKtp,
           email,
           tanggal,
-          dokumenNama,
-          dokumenUrl,
-          dokumenPath: docRaw || "",
-          handphone,
-          stasiun,
           selesaiKunjungan,
           noPengajuan,
           tujuan,
+          handphone,
+          stasiun,
+          dokumenNama,
+          dokumenUrl,
+          dokumenPath: docRaw || "",
+
+          picNama,
+          picJabatan,
+          layananPendampingan,
+
+          accessDoor,
+          accessTime,
+          accessPurpose,
+          protokolerCount,
+          vehicleType,
+          vehiclePlate,
+          needProtokolerEscort,
+
           statusLabel,
           catatan,
           _filenameResolved: false,
@@ -346,6 +439,7 @@ export default function FormDetail() {
     }
   };
 
+  // Tombol aksi bawah
   let actionSection;
   if (detail.statusLabel === "Menunggu") {
     actionSection = (
@@ -512,10 +606,12 @@ export default function FormDetail() {
 
             <div style={{ width: "100%", height: 2, background: "#E3E3E3", borderRadius: 2, margin: "8px 0 18px 0" }} />
 
-            <div className="flex flex-wrap gap-y-5 mb-5">
+            <h3 className="font-poppins font-semibold text-[18px] text-[#242424] mb-3">
+              Data Diri Pengunjung
+            </h3>
+            <div className="flex flex-wrap gap-y-5 mb-6">
               <div className="w-full md:w-1/2 pr-0 md:pr-5 flex flex-col gap-y-4">
                 <DetailCol label="Nama Pemohon" value={detail.nama} />
-                <DetailCol label="Nomor KTP" value={detail.noKtp} />
                 <DetailCol label="Email" value={detail.email} />
                 <DetailCol label="Tanggal Kunjungan" value={detail.tanggal} />
                 <DetailCol
@@ -545,19 +641,48 @@ export default function FormDetail() {
                 <DetailCol label="Nomor Handphone" value={detail.handphone} />
                 <DetailCol label="Stasiun Tujuan" value={detail.stasiun} />
                 <DetailCol label="Selesai Kunjungan" value={detail.selesaiKunjungan} />
-                <DetailCol label="Nomor Pengajuan" value={detail.noPengajuan} />
               </div>
             </div>
 
-            <div>
+            <div className="flex flex-wrap gap-y-5 mb-6">
+              <div className="w-full md:w-1/2 pr-0 md:pr-5 flex flex-col gap-y-4">
+                <DetailCol label="Nomor Pengajuan" value={detail.noPengajuan} />
+                <DetailCol label="Nama Penanggung Jawab (PIC)" value={detail.picNama} />
+              </div>
+              <div className="w-full md:w-1/2 flex flex-col gap-y-4">
+                <DetailCol label="Jabatan Penanggung Jawab" value={detail.picJabatan} />
+                <DetailCol label="Layanan Pendampingan" value={prettyAssistanceLabel(detail.layananPendampingan)} />
+              </div>
+            </div>
+
+            <div className="mb-6">
               <DetailCol label="Tujuan Kunjungan" value={detail.tujuan} fullWidth />
+            </div>
+
+
+            <div style={{ width: "100%", height: 2, background: "#E3E3E3", borderRadius: 2, margin: "10px 0 18px 0" }} />
+            <h3 className="font-poppins font-semibold text-[18px] text-[#242424] mb-3">
+              Akses Pintu
+            </h3>
+
+            <div className="flex flex-wrap gap-y-5 mb-2">
+              <div className="w-full md:w-1/2 pr-0 md:pr-5 flex flex-col gap-y-4">
+                <DetailCol label="Pintu yang Diajukan" value={detail.accessDoor} />
+                <DetailCol label="Waktu Akses" value={detail.accessTime} />
+                <DetailCol label="Tujuan Akses" value={detail.accessPurpose} />
+                <DetailCol label="Jumlah Pendampingan Protokoler" value={detail.protokolerCount} />
+              </div>
+              <div className="w-full md:w-1/2 flex flex-col gap-y-4">
+                <DetailCol label="Jumlah & Jenis Kendaraan" value={detail.vehicleType} />
+                <DetailCol label="Nopol Kendaraan" value={detail.vehiclePlate} />
+                <DetailCol label="Pendampingan Protokoler" value={detail.needProtokolerEscort} />
+              </div>
             </div>
 
             <div style={{ width: "100%", height: 2, background: "#E3E3E3", borderRadius: 2, margin: "18px 0 15px 0" }} />
 
             {actionSection}
 
-            {/* Popup Tolak — kecil, tanpa tombol X */}
             <SmallModal
               open={showReject}
               onClose={() => setShowReject(false)}
@@ -609,7 +734,7 @@ export default function FormDetail() {
               </form>
             </SmallModal>
 
-            {/* Popup Setuju — kecil, tanpa tombol X */}
+            {/* Popup Setuju */}
             <SmallModal
               open={showAccept}
               onClose={() => setShowAccept(false)}
@@ -679,9 +804,6 @@ export default function FormDetail() {
   );
 }
 
-/* =========================
- * DetailCol
- * ========================= */
 function DetailCol({ label, value, fullWidth, fileName, fileUrl }) {
   if (label === "Dokumen Pendukung" && fileName) {
     return (
