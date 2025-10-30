@@ -6,6 +6,48 @@ import './HasilCek.css';
 import CheckIcon from '../assets/CheckIcon.svg';
 import DetailInfo from '../assets/detailinfo.svg';
 
+
+const ASSISTANCE_LABELS = {
+  akses_pintu: "Hanya akses pintu timur/selatan",
+  vip: "Hanya penggunaan ruang VIP",
+  protokol: "Hanya pendampingan protokoler",
+  protokoler: "Hanya pendampingan protokoler",
+  "akses_pintu_protokol": "Akses pintu + pendampingan protokoler",
+  "akses-pintu-protokol": "Akses pintu + pendampingan protokoler",
+  "pintu_plus_protokoler": "Akses pintu + pendampingan protokoler",
+  "vip_protokol": "Ruang VIP + pendampingan protokoler",
+  "vip-protokol": "Ruang VIP + pendampingan protokoler",
+  "akses_pintu_vip_protokol": "Akses pintu + ruang VIP + pendampingan protokoler",
+  "akses-pintu-vip-protokol": "Akses pintu + ruang VIP + pendampingan protokoler",
+  "vip_plus_pendampingan_protokoler": "Ruang VIP + pendampingan protokoler",
+  "akses_pintu_plus_pendampingan_protokoler": "Akses pintu + pendampingan protokoler",
+};
+
+function prettyAssistanceLabel(raw) {
+  if (!raw) return "-";
+  const v = String(raw).trim();
+  if (ASSISTANCE_LABELS[v]) return ASSISTANCE_LABELS[v];
+
+  let s = v.replace(/[_-]+/g, " ").trim();
+  s = s.replace(/\bplus\b/gi, "+");
+  s = s.replace(/\s*\+\s*/g, " + ");
+  s = s
+    .replace(/\bvip\b/gi, "VIP")
+    .replace(/\bprotokol(er)?\b/gi, "pendampingan protokoler")
+    .replace(/\bakses pintu\b/gi, "Akses pintu")
+    .replace(/\bruang vip\b/gi, "Ruang VIP");
+  s = s.replace(/^\s*\w/, (c) => c.toUpperCase());
+  return s.replace(/\s{2,}/g, " ").trim();
+}
+
+function formatProtokolerEscort(raw) {
+  if (!raw) return "-";
+  const val = String(raw).toLowerCase().trim();
+  if (val === "true" || val === "1" || val === "ya" || val === "yes") return "Ya";
+  if (val === "false" || val === "0" || val === "tidak" || val === "no") return "Tidak";
+  return "-";
+}
+
 const HasilCek = () => {
   const location = useLocation();
   const rawNomor = location.state?.nomor;
@@ -299,7 +341,7 @@ const HasilCek = () => {
           </div>
            <div className="info-item">
             <span className="info-label">Layanan Pendampingan</span>
-            <span className="info-value">{data?.assistance_service || '-'}</span>
+            <span className="info-value">{prettyAssistanceLabel(data?.assistance_service)}</span>
           </div>
 
            <div className="info-item">
@@ -324,7 +366,7 @@ const HasilCek = () => {
           </div>
             <div className="info-item">
             <span className="info-label">Pendampingan Protokoler</span>
-            <span className="info-value">{data?.need_protokoler_escort || '-'}</span>
+            <span className="info-value">{formatProtokolerEscort(data?.need_protokoler_escort)}</span>
           </div>
             <div className="info-item">
             <span className="info-label">Jumlah Pendampingan Protokoler</span>

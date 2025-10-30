@@ -260,7 +260,7 @@ export default function VerifikasiPersetujuan() {
         style={{ width: 360 }}
       >
         <img src={kaiLogo} alt="KAI Logo" className="w-[120px] mb-6 mx-auto" />
-        <div className="text:[18px] font-poppins font-medium text-[#242424] text-center mb-7 leading-[20px]">
+        <div className="text-[18px] font-poppins font-medium text-[#242424] text-center mb-7 leading-[20px]">
           Admin Panel Kartu Visitor
         </div>
         <div className="w-full flex justify-center mb-12">

@@ -261,7 +261,7 @@ export default function FormDetail() {
           needProtokolerEscortRaw === 1
             ? "Ya"
             : needProtokolerEscortRaw === "" || needProtokolerEscortRaw == null
-            ? "-"
+            ? "Tidak"
             : "Tidak";
 
         const statusLabel = normalizeStatusLabel(raw.status);

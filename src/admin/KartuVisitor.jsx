@@ -990,16 +990,10 @@ export default function KartuVisitor() {
         <div className="text-[18px] font-poppins font-medium text-[#242424] text-center mb-7 leading-[20px]">
           Admin Panel Kartu Visitor
         </div>
-        <div
-          className="w-full flex justify-center mb-12"
-          style={{
-            width: "100%",
-            height: 2,
-            background: "#C4C4C4",
-            borderRadius: 2,
-            margin: "0 auto",
-          }}
-        />
+        {/* Divider: disamakan persis dengan Dashboard */}
+        <div className="w-full flex justify-center mb-12">
+          <div style={{ width: "100%", height: 2, background: "#C4C4C4", borderRadius: 2, margin: "0 auto" }} />
+        </div>
         <nav className="flex flex-col gap-4 mt-2">
           {[
             {
