@@ -5,6 +5,48 @@ import { Icon } from '@iconify/react';
 import './HasilTolak.css';
 import DetailInfoIcon from '../assets/detailinfo.svg';
 
+
+const ASSISTANCE_LABELS = {
+  akses_pintu: "Hanya akses pintu timur/selatan",
+  vip: "Hanya penggunaan ruang VIP",
+  protokol: "Hanya pendampingan protokoler",
+  protokoler: "Hanya pendampingan protokoler",
+  "akses_pintu_protokol": "Akses pintu + pendampingan protokoler",
+  "akses-pintu-protokol": "Akses pintu + pendampingan protokoler",
+  "pintu_plus_protokoler": "Akses pintu + pendampingan protokoler",
+  "vip_protokol": "Ruang VIP + pendampingan protokoler",
+  "vip-protokol": "Ruang VIP + pendampingan protokoler",
+  "akses_pintu_vip_protokol": "Akses pintu + ruang VIP + pendampingan protokoler",
+  "akses-pintu-vip-protokol": "Akses pintu + ruang VIP + pendampingan protokoler",
+  "vip_plus_pendampingan_protokoler": "Ruang VIP + pendampingan protokoler",
+  "akses_pintu_plus_pendampingan_protokoler": "Akses pintu + pendampingan protokoler",
+};
+
+function prettyAssistanceLabel(raw) {
+  if (!raw) return "-";
+  const v = String(raw).trim();
+  if (ASSISTANCE_LABELS[v]) return ASSISTANCE_LABELS[v];
+
+  let s = v.replace(/[_-]+/g, " ").trim();
+  s = s.replace(/\bplus\b/gi, "+");
+  s = s.replace(/\s*\+\s*/g, " + ");
+  s = s
+    .replace(/\bvip\b/gi, "VIP")
+    .replace(/\bprotokol(er)?\b/gi, "pendampingan protokoler")
+    .replace(/\bakses pintu\b/gi, "Akses pintu")
+    .replace(/\bruang vip\b/gi, "Ruang VIP");
+  s = s.replace(/^\s*\w/, (c) => c.toUpperCase());
+  return s.replace(/\s{2,}/g, " ").trim();
+}
+
+function formatProtokolerEscort(raw) {
+  if (!raw) return "-";
+  const val = String(raw).toLowerCase().trim();
+  if (val === "true" || val === "1" || val === "ya" || val === "yes") return "Ya";
+  if (val === "false" || val === "0" || val === "tidak" || val === "no") return "Tidak";
+  return "-";
+}
+
 const HasilTolak = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -16,12 +58,10 @@ const HasilTolak = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // hover state untuk tombol Ajukan Ulang
   const [hovered, setHovered] = useState(false);
 
   const red = '#E54000';
 
-  // === Normalizer WIB ===
   const normalizeDateString = (t) => {
     if (!t) return '';
     const s = String(t).trim();
@@ -54,7 +94,6 @@ const HasilTolak = () => {
     }).format(d);
   };
 
-  // === Map stasiun (id/code/station_code/station_id/nama -> nama) ===
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -83,7 +122,6 @@ const HasilTolak = () => {
         });
         if (mounted) setStationsMap(m);
       } catch {
-        // biarkan kosong jika gagal
       }
     })();
     return () => {
@@ -91,7 +129,6 @@ const HasilTolak = () => {
     };
   }, []);
 
-  // === Resolver stasiun (pakai map; kalau sudah nama, pakai langsung) ===
   const resolveStationName = (d) => {
     const cands = [
       d?.station_name,
@@ -124,7 +161,6 @@ const HasilTolak = () => {
     return '-';
   };
 
-  // === Ambil detail ===
   async function fetchDetail(n) {
     try {
       const r1 = await getVisitorCardDetail(n);
@@ -139,7 +175,6 @@ const HasilTolak = () => {
     return null;
   }
 
-  // === Fetch awal ===
   useEffect(() => {
     let mounted = true;
     if (!nomor) {
@@ -181,7 +216,6 @@ const HasilTolak = () => {
   const visitTypeName = resolveVisitType(data);
   const reason = data.rejection_reason || data.reason || '-';
 
-  // === Handler Ajukan Ulang ===
   const goApply = () => {
     navigate('/apply', {
       state: {
@@ -195,7 +229,6 @@ const HasilTolak = () => {
     });
   };
 
-  // Style tombol dinamis berdasarkan hover
   const btnStyle = {
     border: `1px solid ${red}`,
     color: hovered ? '#FFFFFF' : red,
