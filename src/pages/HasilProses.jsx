@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { getVisitorCardDetail, checkStatus, getStations } from '../api';
 import './HasilProses.css';
 import Hourglass from '../assets/Hourglass.svg';
@@ -13,6 +13,7 @@ import PopupSukses from './PopUpSukses.jsx';
 
 const HasilProses = () => {
   const location = useLocation();
+  const navigate = useNavigate(); 
   const rawNomor = location.state?.nomor;
   const nomor = (rawNomor ?? '').toString().trim();
 
@@ -22,7 +23,9 @@ const HasilProses = () => {
   const [error, setError] = useState('');
   const [showPopupPembatalan, setShowPopupPembatalan] = useState(false);
   const [showPopupSukses, setShowPopupSukses] = useState(false);
+  const [justCancelled, setJustCancelled] = useState(false); 
 
+  // ==== Helpers waktu ====
   const normalizeDateString = (t) => {
     if (t === null || t === undefined) return '';
     const s = String(t).trim();
@@ -90,6 +93,7 @@ const HasilProses = () => {
     }).format(d);
   };
 
+  // normalisasi nama stasiun
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -111,6 +115,7 @@ const HasilProses = () => {
     return () => { mounted = false; };
   }, []);
 
+  // ==== Normalisasi tampilan stasiun & visit type ====
   const resolveStationName = (d) => {
     const candidates = [ d?.station_name, d?.visit_station, d?.station, d?.station_code, d?.station_id ]
       .filter(v => v !== undefined && v !== null);
@@ -122,7 +127,6 @@ const HasilProses = () => {
     return '-';
   };
 
-  // === Jenis Visitor ===
   const resolveVisitType = (d) => {
     const candidates = [
       d?.visit_type_label, d?.visit_type_name, d?.visit_type, d?.visitor_type,
@@ -135,11 +139,41 @@ const HasilProses = () => {
     return '-';
   };
 
+  // ==== Fetch detail by reference ====
   async function fetchDetail(n) {
     try { const r1 = await getVisitorCardDetail(n);            const d1 = r1?.data?.data ?? r1?.data ?? null; if (d1) return d1; } catch {}
     try { const r2 = await getVisitorCardDetail({ reference_number: n }); const d2 = r2?.data?.data ?? r2?.data ?? null; if (d2) return d2; } catch {}
     try { const r3 = await checkStatus({ reference_number: n });         const d3 = r3?.data?.data ?? r3?.data ?? null; if (d3) return d3; } catch (e) { throw e; }
     return null;
+  }
+
+  // Normalize status string from various backend fields
+  function getNormalizedStatus(d) {
+    const raw = (
+      d?.status || d?.application_status || d?.state || d?.status_code || d?.status_text || ''
+    ).toString().toLowerCase();
+    return raw;
+  }
+
+  // If status indicates terminal state, redirect to the appropriate result page
+  function checkAndRedirect(d) {
+    if (!d) return false;
+    const s = getNormalizedStatus(d);
+    if (!s) return false;
+
+    if (s === 'approved' || s === 'disetujui' || s.includes('approve') || s.includes('accepted')) {
+      navigate('/status/approved', { state: { nomor } });
+      return true;
+    }
+    if (s === 'rejected' || s === 'ditolak' || s.includes('reject') || s.includes('declin')) {
+      navigate('/status/rejected', { state: { nomor } });
+      return true;
+    }
+    if (s === 'cancelled' || s === 'canceled' || s === 'dibatalkan' || s.includes('batal')) {
+      navigate('/status/cancelled', { state: { nomor } });
+      return true;
+    }
+    return false;
   }
 
   useEffect(() => {
@@ -155,7 +189,11 @@ const HasilProses = () => {
         const d = await fetchDetail(nomor);
         if (!mounted) return;
         if (!d) setError('Data tidak ditemukan. Pastikan nomor referensi benar.');
-        else setData(d);
+        else {
+          setData(d);
+          // jika status sudah berubah menjadi approved/rejected/cancelled, redirect segera
+          checkAndRedirect(d);
+        }
       } catch (e) {
         if (!mounted) return;
         const status = e?.response?.status;
@@ -169,18 +207,57 @@ const HasilProses = () => {
     return () => { mounted = false; };
   }, [nomor]);
 
+  // ==== Auto refresh tiap 30 detik ====
   useEffect(() => {
     if (!nomor) return;
     const id = setInterval(() => {
-      fetchDetail(nomor).then((d) => d && setData(d)).catch(() => {});
+      fetchDetail(nomor)
+        .then((d) => {
+          if (!d) return;
+          setData(d);
+          // jika status berubah jadi terminal, redirect
+          checkAndRedirect(d);
+        })
+        .catch(() => {});
     }, 30000);
     return () => clearInterval(id);
   }, [nomor]);
 
+  // ==== Popup handlers - YANG SUDAH DIPERBAIKI ====
   const handleOpenPopupPembatalan = () => setShowPopupPembatalan(true);
   const handleClosePopupPembatalan = () => setShowPopupPembatalan(false);
-  const handleConfirmPembatalan = () => { setShowPopupPembatalan(false); setShowPopupSukses(true); };
-  const handleClosePopupSukses = () => setShowPopupSukses(false);
+  
+  // ← PERBAIKAN: set flag bahwa pembatalan baru terjadi
+  const handleConfirmPembatalan = () => { 
+    setShowPopupPembatalan(false); 
+    setShowPopupSukses(true);
+    setJustCancelled(true); // tandai bahwa baru saja dibatalkan
+  };
+
+  // ← PERBAIKAN: setelah popup sukses ditutup, refresh dan redirect
+  const handleClosePopupSukses = () => {
+    setShowPopupSukses(false);
+    
+    // Kalau memang baru saja dibatalkan
+    if (justCancelled) {
+      // Refresh data dulu untuk memastikan status terupdate
+      fetchDetail(nomor)
+        .then((d) => {
+          if (d) setData(d);
+          
+          // Tunggu sebentar (500ms) lalu redirect ke halaman status dibatalkan
+          setTimeout(() => {
+            navigate('/status/cancelled', { state: { nomor } });
+          }, 500);
+        })
+        .catch(() => {
+          // Kalau gagal fetch, tetap redirect (fallback)
+          setTimeout(() => {
+            navigate('/status/cancelled', { state: { nomor } });
+          }, 500);
+        });
+    }
+  };
 
   if (loading) return <div>Loading...</div>;
   if (error)   return <div className="text-red-500 p-4">{error}</div>;
@@ -194,6 +271,10 @@ const HasilProses = () => {
 
   const stationName   = resolveStationName(data);
   const visitTypeName = resolveVisitType(data);
+
+  // ==== Siapkan identitas untuk pembatalan ====
+  const refNumber = data?.reference_number || nomor;
+  const appId     = data?.id || data?.application_id || data?.visit_id || null;
 
   return (
     <div className="page-wrapper-hasil">
@@ -211,15 +292,15 @@ const HasilProses = () => {
         <div className="info-grid">
           <div className="info-item">
             <span className="info-label">NOMOR REFERENSI</span>
-            <span className="info-value">{data.reference_number}</span>
+            <span className="info-value">{data?.reference_number || refNumber}</span>
           </div>
           <div className="info-item">
             <span className="info-label">NAMA PEMOHON</span>
-            <span className="info-value">{data.full_name}</span>
+            <span className="info-value">{data?.full_name || '-'}</span>
           </div>
           <div className="info-item">
             <span className="info-label">TUJUAN KUNJUNGAN</span>
-            <span className="info-value">{data.visit_purpose}</span>
+            <span className="info-value">{data?.visit_purpose || '-'}</span>
           </div>
           <div className="info-item">
             <span className="info-label">STASIUN KUNJUNGAN</span>
@@ -232,15 +313,15 @@ const HasilProses = () => {
             <img src={DetailInfoIcon} alt="detail info icon" className="detail-info-icon" />
             <h4>Detail Permohonan</h4>
           </div>
-        <hr className="divider" />
+          <hr className="divider" />
           <div className="date-status-grid">
             <div className="date-item">
               <span className="date-label">Tanggal Mulai Berlaku</span>
-              <span className="date-value">{fmtDate(data.visit_start_date || data.start_date)}</span>
+              <span className="date-value">{fmtDate(data?.visit_start_date || data?.start_date)}</span>
             </div>
             <div className="date-item">
               <span className="date-label">Tanggal Berakhir</span>
-              <span className="date-value">{fmtDate(data.visit_end_date || data.end_date)}</span>
+              <span className="date-value">{fmtDate(data?.visit_end_date || data?.end_date)}</span>
             </div>
             <div className="date-item">
               <span className="date-label">Jenis Visitor</span>
@@ -248,7 +329,7 @@ const HasilProses = () => {
             </div>
             <div className="status-item">
               <span className="status-label">Status Saat Ini</span>
-              <span className="status-value-disetujui">{data.status}</span>
+              <span className="status-value-disetujui">{data?.status || '-'}</span>
             </div>
           </div>
         </div>
@@ -264,11 +345,17 @@ const HasilProses = () => {
         </div>
         
         <div className="button-group-tolak">
-          <button className="re-apply-button-tolak">
+          <button className="re-apply-button-tolak" type="button">
             <img src={CallIcon} alt="Hubungi Keamanan" className="reapply-icon-tolak" />
             Hubungi Keamanan
           </button>
-          <button className="contact-button-tolak" onClick={handleOpenPopupPembatalan}>
+
+          <button
+            className="contact-button-tolak"
+            type="button"
+            onClick={handleOpenPopupPembatalan}
+            aria-label="Batalkan Pengajuan"
+          >
             <img src={SilangIcon} alt="Batalkan Pengajuan" className="phone-icon-tolak" />
             Batalkan Pengajuan
           </button>
@@ -276,8 +363,15 @@ const HasilProses = () => {
       </div>
 
       {showPopupPembatalan && (
-        <PopupPembatalan onClose={handleClosePopupPembatalan} onConfirm={handleConfirmPembatalan} />
+        <PopupPembatalan
+          onClose={handleClosePopupPembatalan}
+          onConfirm={handleConfirmPembatalan}
+          nomor={refNumber}
+          reference={refNumber}
+          applicationId={appId}
+        />
       )}
+
       {showPopupSukses && <PopupSukses onClose={handleClosePopupSukses} />}
     </div>
   );

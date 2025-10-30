@@ -16,7 +16,6 @@ const HasilCek = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // === NORMALIZER ===
   const normalizeDateString = (t) => {
     if (!t) return '';
     const s = String(t).trim();
@@ -45,7 +44,7 @@ const HasilCek = () => {
     });
   };
 
-  // ==== Map stasiun (lebih toleran: id/code/station_code/nama -> nama) ====
+  //daftar stasiun dari API
   useEffect(() => {
     (async () => {
       try {
@@ -71,17 +70,14 @@ const HasilCek = () => {
           if (id !== undefined && id !== null) map.set(String(id), String(nm));
           if (it?.code) map.set(String(it.code), String(nm));
           if (it?.station_code) map.set(String(it.station_code), String(nm));
-          // Simpan juga nama sebagai key → bila API sudah kirim nama langsung
           map.set(String(nm), String(nm));
         });
         setStationsMap(map);
       } catch {
-        // abaikan error pemuatan daftar stasiun
       }
     })();
   }, []);
 
-  // ==== Resolver stasiun: pakai map, jika non-numeric & tidak kosong -> pakai langsung ====
   const resolveStationName = (d) => {
     const candidates = [
       d?.station_name,
@@ -94,7 +90,6 @@ const HasilCek = () => {
     for (const c of candidates) {
       const key = String(c);
       if (stationsMap.has(key)) return stationsMap.get(key);
-      // kalau sudah berupa nama (bukan angka/kode), gunakan langsung
       if (isNaN(Number(key)) && key.trim()) return key;
     }
     return '-';
@@ -103,7 +98,7 @@ const HasilCek = () => {
   const resolveVisitType = (d) =>
     d?.visit_type_label || d?.visit_type || d?.visitor_type || '-';
 
-  // Fetch data
+  // data detail visitor dari API
   async function fetchDetail(n) {
     try {
       const r = await getVisitorCardDetail(n);
@@ -145,17 +140,23 @@ const HasilCek = () => {
     '';
 
   const status = (data.status || '').toLowerCase();
-  const isApproved = status === 'approved';
-  const isRejected = status === 'rejected';
+  const isApproved = status === 'approved' || status === 'disetujui';
+  const isRejected = status === 'rejected' || status === 'ditolak';
+  const isCancelled = 
+    status === 'cancelled' ||  
+    status === 'canceled' ||    
+    status === 'dibatalkan' || 
+    status.includes('batal');   
 
-  const green = '#14AE5C';
-  const red = '#E54000';
+  const green = '#14AE5C';  
+  const red = '#E54000';   
+  const gray = '#7A7A7A';  
 
-  let statusText = '',
-    statusDesc = '',
-    catatanTitle = '',
-    catatanNote = '';
-
+  let statusText = '';
+  let statusDesc = '';
+  let catatanTitle = '';
+  let catatanNote = '';
+  let showCatatan = true; 
   if (isApproved) {
     statusText = 'Permohonan Disetujui';
     statusDesc = 'Kartu visitor Anda telah disetujui dan siap diambil.';
@@ -170,6 +171,10 @@ const HasilCek = () => {
     catatanNote =
       data.rejection_reason ||
       'Dokumen tidak sesuai persyaratan atau ada data yang belum lengkap.';
+  } else if (isCancelled) {
+    statusText = 'Permohonan Dibatalkan';
+    statusDesc = 'Permohonan Anda telah dibatalkan.';
+    showCatatan = false; 
   } else {
     statusText = 'Permohonan Sedang Diproses';
     statusDesc = 'Permohonan Anda sedang dalam tahap verifikasi.';
@@ -178,34 +183,36 @@ const HasilCek = () => {
       'Permohonan Anda sedang dalam tahap verifikasi oleh tim kami.';
   }
 
+  const currentColor = isCancelled 
+    ? gray          
+    : (isApproved ? green : isRejected ? red : '#28a745');
+
+  const pageBackground = isCancelled 
+    ? '#F5F5F5'    
+    : (isApproved ? '#e5e7eb' : isRejected ? '#FFF5F5' : '#EBF1F8');
+
   return (
     <div
       className="page-wrapper-hasil"
-      style={{
-        background: isApproved ? '#e5e7eb;' : isRejected ? '#FFF5F5' : '#EBF1F8',
-      }}
+      style={{ background: pageBackground }}
     >
       <div
         className="main-card-container"
-        style={{
-          borderTop: `5px solid ${isApproved ? green : isRejected ? red : '#28a745'}`,
-        }}
+        style={{ borderTop: `5px solid ${currentColor}` }}
       >
-        {/* Header */}
         <div className="status-header">
           {isApproved ? (
             <Icon icon="mingcute:check-2-fill" color={green} width={90} height={90} />
           ) : isRejected ? (
             <Icon icon="solar:danger-triangle-bold" color={red} width={75} height={75} />
+          ) : isCancelled ? (
+            <Icon icon="material-symbols:cancel-rounded" color={gray} width={85} height={85} />
           ) : (
             <img src={CheckIcon} alt="Status" className="check-icon" />
           )}
 
-          <div
-            className="status-text"
-            style={{ color: isApproved ? green : isRejected ? red : '#333' }}
-          >
-            <h3 style={{ color: isApproved ? green : isRejected ? red : undefined }}>
+          <div className="status-text" style={{ color: currentColor }}>
+            <h3 style={{ color: currentColor }}>
               {statusText}
             </h3>
             <p>{statusDesc}</p>
@@ -213,7 +220,6 @@ const HasilCek = () => {
           </div>
         </div>
 
-        {/* Info Grid */}
         <div className="info-grid">
           <div className="info-item">
             <span className="info-label">NOMOR REFERENSI</span>
@@ -235,7 +241,6 @@ const HasilCek = () => {
           </div>
         </div>
 
-        {/* Detail */}
         <div className="detail-section">
           <div className="detail-header">
             <img src={DetailInfo} alt="Detail Info" className="detail-info-icon" />
@@ -263,46 +268,46 @@ const HasilCek = () => {
               <span className="status-label">Status Saat Ini</span>
               <span
                 className="status-value-disetujui"
-                style={{ color: isApproved ? green : isRejected ? red : '#28a745' }}
+                style={{ color: currentColor }}
               >
-                {isApproved ? 'Diterima' : isRejected ? 'Ditolak' : data.status || '-'}
+                {isCancelled 
+                  ? 'Dibatalkan'   
+                  : (isApproved ? 'Diterima' : isRejected ? 'Ditolak' : data.status || '-')
+                }
               </span>
             </div>
           </div>
         </div>
 
-        {/* Catatan */}
-        <div
-          className="approval-note-box"
-          style={{
-            border: `1px solid ${isApproved ? green : isRejected ? red : '#28a745'}`,
-            background: isApproved ? '#EAFBF3' : isRejected ? '#FFECEC' : '#f1f8f3',
-          }}
-        >
-          <Icon
-            icon={
-              isApproved
-                ? 'material-symbols:check-box-rounded'
-                : isRejected
-                ? 'solar:danger-triangle-bold'
-                : 'material-symbols:info'
-            }
-            color={isApproved ? green : isRejected ? red : '#28a745'}
-            width={28}
-            height={28}
-          />
-          <div className="note-content">
-            <h5
-              className="note-title"
-              style={{ color: isApproved ? green : isRejected ? red : '#28a745' }}
-            >
-              {catatanTitle}
-            </h5>
-            <p className="note-text">{catatanNote}</p>
+        {showCatatan && (
+          <div
+            className="approval-note-box"
+            style={{
+              border: `1px solid ${currentColor}`,
+              background: isApproved ? '#EAFBF3' : isRejected ? '#FFECEC' : '#f1f8f3',
+            }}
+          >
+            <Icon
+              icon={
+                isApproved
+                  ? 'material-symbols:check-box-rounded'
+                  : isRejected
+                  ? 'solar:danger-triangle-bold'
+                  : 'material-symbols:info'
+              }
+              color={currentColor}
+              width={28}
+              height={28}
+            />
+            <div className="note-content">
+              <h5 className="note-title" style={{ color: currentColor }}>
+                {catatanTitle}
+              </h5>
+              <p className="note-text">{catatanNote}</p>
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Kontak */}
         <button className="contact-button">
           <svg
             className="phone-icon"

@@ -5,7 +5,6 @@ export const API_BASE =
 
 export const ORIGIN = API_BASE.replace(/\/api\/?$/, "");
 
-// Export helper untuk download blob
 export const downloadBlob = (blob, filename) => {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -17,7 +16,6 @@ export const downloadBlob = (blob, filename) => {
   URL.revokeObjectURL(url);
 };
 
-// storage/uploads
 const absoluteStorageURL = (path) => {
   if (!path) return null;
   if (/^https?:\/\//i.test(path)) return path;
@@ -39,26 +37,20 @@ function makeKey(url, params) {
   const p = params ? stableStringifyParams(params) : "";
   return `${url}?${p}`;
 }
-
 function stableStringifyParams(obj) {
   if (obj == null) return "";
   if (typeof obj !== "object") return String(obj);
   if (Array.isArray(obj)) return JSON.stringify(obj.map(stableStringifyParams));
   const keys = Object.keys(obj).sort();
   const res = {};
-  for (const k of keys) {
-    res[k] = obj[k];
-  }
+  for (const k of keys) res[k] = obj[k];
   return JSON.stringify(res);
 }
-
 export async function cachedGet(url, { params, ttl = 10000, cfg = {} } = {}) {
   const key = makeKey(url, params);
   const now = Date.now();
   const hit = __getCache.get(key);
-  if (hit && now - hit.t <= ttl) {
-    return hit.res;
-  }
+  if (hit && now - hit.t <= ttl) return hit.res;
   const res = await http.get(url, { params, ...cfg });
   __getCache.set(key, { t: now, res });
   const MAX_CACHE = 200;
@@ -78,13 +70,11 @@ export const setAuthToken = (token) => {
     delete http.defaults.headers.common["Authorization"];
   }
 };
-
 export const loadTokenFromStorage = () => {
   const t = localStorage.getItem("token");
   if (t) http.defaults.headers.common["Authorization"] = `Bearer ${t}`;
   return t;
 };
-
 loadTokenFromStorage();
 
 http.interceptors.request.use((config) => {
@@ -98,13 +88,10 @@ http.interceptors.request.use((config) => {
   }
   return config;
 });
-
 http.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err?.response?.status === 401) {
-      setAuthToken(null);
-    }
+    if (err?.response?.status === 401) setAuthToken(null);
     return Promise.reject(err);
   }
 );
@@ -116,7 +103,6 @@ export async function fetchDocumentBlob(pathOrId, cfg = {}) {
     ["/admin/documents/download", { path: pathOrId }],
     ["/public/documents/download", { path: pathOrId }],
   ];
-
   for (const [endpoint, params] of candidates) {
     try {
       return await http.get(endpoint, {
@@ -124,9 +110,7 @@ export async function fetchDocumentBlob(pathOrId, cfg = {}) {
         params,
         responseType: "blob",
       });
-    } catch {
-      // try next
-    }
+    } catch {}
   }
 
   const token = localStorage.getItem("token");
@@ -137,7 +121,6 @@ export async function fetchDocumentBlob(pathOrId, cfg = {}) {
     ...cfg,
   });
 }
-
 export function filenameFromHeaders(resp, fallback = "dokumen") {
   const cd =
     resp?.headers?.["content-disposition"] ||
@@ -149,6 +132,7 @@ export function filenameFromHeaders(resp, fallback = "dokumen") {
   return fallback;
 }
 
+//public 
 export async function getVisitTypeMap() {
   const res = await getVisitTypes();
   const arr = Array.isArray(res?.data) ? res.data : res?.data?.data || [];
@@ -159,72 +143,25 @@ export async function getVisitTypeMap() {
   });
   return map;
 }
-
-// public
 export const getVisitTypes = () => http.get(`/public/visit-types`);
 export const getStations = () => http.get(`/public/stations`);
-export const submitVisitorCard = (data) =>
-  http.post(`/public/visitor-cards`, data);
-export const getVisitorCard = (id) =>
-  http.get(`/public/visitor-cards/${id}`);
+export const submitVisitorCard = (data) => http.post(`/public/visitor-cards`, data);
+export const getVisitorCard = (id) => http.get(`/public/visitor-cards/${id}`);
 export const checkStatus = (data) => http.post(`/public/check-status`, data);
-export const getVisitorCardDetail = (id) =>
-  http.get(`/public/visitor-cards/${id}/detail`);
+export const getVisitorCardDetail = (id) => http.get(`/public/visitor-cards/${id}/detail`);
 export const getStatusLogs = () => http.get(`/public/status-logs`);
+
 
 export async function cancelApplication(payload = {}) {
   const ref =
-    payload.reference ||
-    payload.reference_number ||
-    payload.id ||
-    payload.nomor ||
+    payload.reference_number ??
+    payload.reference ??
+    payload.id ??
+    payload.nomor ??
     payload.ref;
-  if (!ref) {
-    return http.post(`/public/cancel-application`, payload);
-  }
-
-  const bodyVariants = [
-    { reference_number: ref, reference: ref, id: ref },
-    { reference: ref },
-    { reference_number: ref },
-    { id: ref },
-  ];
-
-  const requests = [
-    (b) => http.post(`/public/cancel-application`, b),
-
-    (b) => http.post(`/public/visitor-cards/cancel`, b),
-    (b) => http.post(`/public/applications/cancel`, b),
-
-    () => http.post(`/public/visitor-cards/${encodeURIComponent(ref)}/cancel`),
-    () =>
-      http.post(`/public/applications/${encodeURIComponent(ref)}/cancel`),
-
-    (b) =>
-      http.patch(`/public/visitor-cards/cancel`, {
-        ...b,
-        status: "cancelled",
-      }),
-
-    () =>
-      http.delete(`/public/applications/${encodeURIComponent(ref)}`, {
-        data: { reason: "cancelled_by_user" },
-      }),
-  ];
-
-  let lastErr;
-  // coba kombinasi payload + endpoint
-  for (const buildBody of bodyVariants) {
-    for (const call of requests) {
-      try {
-        const res = await call(buildBody);
-        if (res?.status >= 200 && res?.status < 300) return res;
-      } catch (e) {
-        lastErr = e;
-      }
-    }
-  }
-  throw lastErr || new Error("Gagal membatalkan permohonan pada semua endpoint kandidat.");
+  const body = { ...(payload || {}) };
+  if (ref) body.reference_number = ref;
+  return http.post(`/public/cancel-application`, body);
 }
 
 export const resubmitApplication = (data) =>
@@ -235,14 +172,10 @@ export const adminLogin = (data) => http.post(`/admin/login`, data);
 export const adminLogout = () => http.post(`/admin/logout`);
 export const getAdminMe = () => http.get(`/admin/me`);
 
-export const getActiveVisitors = () =>
-  http.get(`/admin/dashboard/active-visitors`);
-export const getPendingCount = () =>
-  http.get(`/admin/dashboard/pending-count`);
-export const getTodayIssued = () =>
-  cachedGet(`/admin/dashboard/today-issued`, { ttl: 10000 });
-export const getTodayReturned = () =>
-  cachedGet(`/admin/dashboard/today-returned`, { ttl: 10000 });
+export const getActiveVisitors = () => http.get(`/admin/dashboard/active-visitors`);
+export const getPendingCount = () => http.get(`/admin/dashboard/pending-count`);
+export const getTodayIssued = () => cachedGet(`/admin/dashboard/today-issued`, { ttl: 10000 });
+export const getTodayReturned = () => cachedGet(`/admin/dashboard/today-returned`, { ttl: 10000 });
 
 export const getDamagedCards = (opts = {}) => {
   const ttl = opts.ttl ?? 0;
@@ -256,7 +189,6 @@ export const getDamagedCards = (opts = {}) => {
   const url = `/admin/dashboard/damaged-cards?_ts=${Date.now()}`;
   return http.get(url, { headers: { "Cache-Control": "no-cache" } }).then((r) => r);
 };
-
 export const getLostCards = (opts = {}) => {
   const ttl = opts.ttl ?? 0;
   if (typeof cachedGet === "function") {
@@ -285,7 +217,6 @@ export const getApprovedCards = (opts = {}) => {
     headers: { "Cache-Control": "no-cache" },
   });
 };
-
 export const getActiveCards = (opts = {}) => {
   const ttl = opts.ttl ?? 0;
   const params = { _ts: Date.now(), ...(opts.params || {}) };
@@ -302,10 +233,8 @@ export const getActiveCards = (opts = {}) => {
   });
 };
 
-export const getVerifications = (params) =>
-  http.get(`/admin/verification`, { params });
-export const getPendingVerifications = () =>
-  http.get(`/admin/verification/pending`);
+export const getVerifications = (params) => http.get(`/admin/verification`, { params });
+export const getPendingVerifications = () => http.get(`/admin/verification/pending`);
 
 const _unwrapList = (res) =>
   Array.isArray(res?.data) ? res.data : res?.data?.data || [];
@@ -325,39 +254,38 @@ const _pushUnique = (bucket, seen, items) => {
   }
 };
 
+
 export const getVerificationsAll = async (extraParams = {}) => {
   const results = [];
   const seen = new Set();
 
-  const settled = await Promise.allSettled([
-    cachedGet(`/admin/verification/pending`, {
-      params: { ...extraParams },
-      ttl: 10000,
-    }),
-    cachedGet(`/admin/verification/approved`, {
-      params: { ...extraParams },
-      ttl: 10000,
-    }),
-    cachedGet(`/admin/verification/rejected`, {
-      params: { ...extraParams },
-      ttl: 10000,
-    }),
-  ]);
+  const candidates = [
+    ["/admin/verification/pending",   {}],
+    ["/admin/verification/approved",  {}],
+    ["/admin/verification/rejected",  {}],
+
+    ["/admin/verification/cancelled", {}],
+    ["/admin/verification/canceled",  {}],
+    ["/admin/verification",           { status: "cancelled" }],
+    ["/admin/verification",           { status: "canceled"   }],
+
+    ["/admin/verification/all",       {}],
+    ["/admin/verification",           {}],
+  ];
+
+  const settled = await Promise.allSettled(
+    candidates.map(([url, params]) =>
+      cachedGet(url, {
+        params: { ...extraParams, ...params },
+        ttl: 10000,
+      })
+    )
+  );
 
   for (const s of settled) {
     if (s.status === "fulfilled") {
       _pushUnique(results, seen, _unwrapList(s.value));
     }
-  }
-
-  if (results.length === 0) {
-    try {
-      const r = await cachedGet(`/admin/verification`, {
-        params: { ...extraParams },
-        ttl: 10000,
-      });
-      _pushUnique(results, seen, _unwrapList(r));
-    } catch {}
   }
 
   return { data: results };
@@ -373,93 +301,74 @@ export async function fetchOptionLists() {
   return res.data?.data || {};
 }
 
-export const getVerificationDetail = (data) =>
-  http.post(`/admin/verification/detail`, data);
-export const approveVerification = (data) =>
-  http.post(`/admin/verification/approve`, data);
-export const rejectVerification = (data) =>
-  http.post(`/admin/verification/reject`, data);
-export const bulkVerificationAction = (data) =>
-  http.post(`/admin/verification/bulk-action`, data);
+export const getVerificationDetail = (data) => http.post(`/admin/verification/detail`, data);
+export const approveVerification = (data) => http.post(`/admin/verification/approve`, data);
+export const rejectVerification = (data) => http.post(`/admin/verification/reject`, data);
+export const bulkVerificationAction = (data) => http.post(`/admin/verification/bulk-action`, data);
 
-export const getApprovedCardsLegacy = () => http.get(`/admin/cards/approved`); // (opsional) kalau perlu
+export const getApprovedCardsLegacy = () => http.get(`/admin/cards/approved`);
 export const getReturnedCards = () => http.get(`/admin/cards/returned`);
 export const issueCard = (data) => http.post(`/admin/cards/issue`, data);
 export const returnCard = (data) => http.post(`/admin/cards/return`, data);
-export const editCardCondition = (id, data) =>
-  http.put(`/admin/cards/${id}/condition`, data);
-
-export const updateVisitorCard = (id, data) =>
-  http.put(`/admin/visitor-cards/${id}`, data);
+export const editCardCondition = (id, data) => http.put(`/admin/cards/${id}/condition`, data);
+export const updateVisitorCard = (id, data) => http.put(`/admin/visitor-cards/${id}`, data);
 
 const blobOpts = { responseType: "blob" };
-
-export const exportStationDailyFlow = () =>
-  http.get(`/admin/reports/station-daily-flow`, blobOpts);
+export const exportStationDailyFlow = () => http.get(`/admin/reports/station-daily-flow`, blobOpts);
 export const exportAll = () => http.get(`/admin/reports/export-all`, blobOpts);
 export const exportDailyFlow = () => http.get(`/admin/reports/daily-flow`, blobOpts);
-export const exportWeeklyFlow = () =>
-  http.get(`/admin/reports/weekly-flow`, blobOpts);
-export const exportMonthlyFlow = () =>
-  http.get(`/admin/reports/monthly-flow`, blobOpts);
-export const exportYearlyFlow = () =>
-  http.get(`/admin/reports/yearly-flow`, blobOpts);
-export const exportCardCondition = () =>
-  http.get(`/admin/reports/card-condition`, blobOpts);
+export const exportWeeklyFlow = () => http.get(`/admin/reports/weekly-flow`, blobOpts);
+export const exportMonthlyFlow = () => http.get(`/admin/reports/monthly-flow`, blobOpts);
+export const exportYearlyFlow = () => http.get(`/admin/reports/yearly-flow`, blobOpts);
+export const exportCardCondition = () => http.get(`/admin/reports/card-condition`, blobOpts);
 
 export const adminVisitorCards = {
-  list: () => http.get(`/admin/visitor-cards`),
-  get: (id) => http.get(`/admin/visitor-cards/${id}`),
+  list:   () => http.get(`/admin/visitor-cards`),
+  get:    (id) => http.get(`/admin/visitor-cards/${id}`),
   create: (data) => http.post(`/admin/visitor-cards`, data),
   update: (id, data) => http.put(`/admin/visitor-cards/${id}`, data),
   delete: (id) => http.delete(`/admin/visitor-cards/${id}`),
 };
-
 export const adminCardTransactions = {
-  list: () => http.get(`/admin/card-transactions`),
-  get: (id) => http.get(`/admin/card-transactions/${id}`),
+  list:   () => http.get(`/admin/card-transactions`),
+  get:    (id) => http.get(`/admin/card-transactions/${id}`),
   create: (data) => http.post(`/admin/card-transactions`, data),
   update: (id, data) => http.put(`/admin/card-transactions/${id}`, data),
   delete: (id) => http.delete(`/admin/card-transactions/${id}`),
 };
-
 export const adminStatusLogs = {
-  list: () => http.get(`/admin/status-logs`),
-  get: (id) => http.get(`/admin/status-logs/${id}`),
+  list:   () => http.get(`/admin/status-logs`),
+  get:    (id) => http.get(`/admin/status-logs/${id}`),
   create: (data) => http.post(`/admin/status-logs`, data),
   update: (id, data) => http.put(`/admin/status-logs/${id}`, data),
   delete: (id) => http.delete(`/admin/status-logs/${id}`),
 };
-
 export const adminStations = {
-  list: () => http.get(`/admin/stations`),
-  get: (id) => http.get(`/admin/stations/${id}`),
+  list:   () => http.get(`/admin/stations`),
+  get:    (id) => http.get(`/admin/stations/${id}`),
   create: (data) => http.post(`/admin/stations`, data),
-  update: (id, data) => http.put(`/admin/stations/${id}`),
+  update: (id, data) => http.put(`/admin/stations/${id}`, data),
   delete: (id) => http.delete(`/admin/stations/${id}`),
 };
-
 export const adminVisitTypes = {
-  list: () => http.get(`/admin/visit-types`),
-  get: (id) => http.get(`/admin/visit-types/${id}`),
+  list:   () => http.get(`/admin/visit-types`),
+  get:    (id) => http.get(`/admin/visit-types/${id}`),
   create: (data) => http.post(`/admin/visit-types`, data),
-  update: (id, data) => http.put(`/admin/visit-types/${id}`),
+  update: (id, data) => http.put(`/admin/visit-types/${id}`, data),
   delete: (id) => http.delete(`/admin/visit-types/${id}`),
 };
-
 export const adminUsers = {
-  list: () => http.get(`/admin/users`),
-  get: (id) => http.get(`/admin/users/${id}`),
+  list:   () => http.get(`/admin/users`),
+  get:    (id) => http.get(`/admin/users/${id}`),
   create: (data) => http.post(`/admin/users`, data),
-  update: (id, data) => http.put(`/admin/users/${id}`),
+  update: (id, data) => http.put(`/admin/users/${id}`, data),
   delete: (id) => http.delete(`/admin/users/${id}`),
 };
-
 export const adminNotifications = {
-  list: () => http.get(`/admin/notifications`),
-  get: (id) => http.get(`/admin/notifications/${id}`),
+  list:   () => http.get(`/admin/notifications`),
+  get:    (id) => http.get(`/admin/notifications/${id}`),
   create: (data) => http.post(`/admin/notifications`, data),
-  update: (id, data) => http.put(`/admin/notifications/${id}`),
+  update: (id, data) => http.put(`/admin/notifications/${id}`, data),
   delete: (id) => http.delete(`/admin/notifications/${id}`),
 };
 

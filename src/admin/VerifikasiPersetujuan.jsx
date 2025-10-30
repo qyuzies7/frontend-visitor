@@ -12,36 +12,39 @@ import {
   filenameFromHeaders,
 } from "../api";
 
-
 const statusConfig = {
-  Menunggu:  { bg: "#FEF5E7", color: "#D69E2E", label: "Menunggu" },
-  Disetujui: { bg: "#E7FEED", color: "#47D62E", label: "Disetujui" },
-  Ditolak:   { bg: "#FFDEDB", color: "#FF0000", label: "Ditolak" },
+  Menunggu:   { bg: "#FEF5E7", color: "#D69E2E", label: "Menunggu" },
+  Disetujui:  { bg: "#E7FEED", color: "#47D62E", label: "Disetujui" },
+  Ditolak:    { bg: "#FFDEDB", color: "#FF0000", label: "Ditolak" },
+  // Style untuk DIBATALKAN agar berbeda (abu-abu):
+  Dibatalkan: { bg: "#F2F2F2", color: "#7A7A7A", label: "Dibatalkan" },
 };
 
-// Normalisasi status backend -> ID (longgar)
+// Normalisasi status backend -> ID (menangkap 'cancelled/canceled/dibatalkan')
 function mapStatusID(raw) {
   if (raw === 1 || raw === "1" || String(raw).toLowerCase() === "true") return "Disetujui";
   if (raw === 2 || raw === "2") return "Ditolak";
+  if (raw === 3 || raw === "3") return "Dibatalkan";
   if (raw === 0 || raw === "0") return "Menunggu";
 
   const s = String(raw || "").trim().toLowerCase();
+
+  if (s.includes("approve") || s.includes("accepted") || s === "accept" || s.includes("disetujui") || s === "setuju")
+    return "Disetujui";
+
+  if (s.includes("reject") || s.includes("declin") || s.includes("ditolak") || s === "tolak")
+    return "Ditolak";
+
+  // tangkap bentuk pembatalan apapun
   if (
-    s.includes("approve") || s.includes("accepted") || s === "accept" ||
-    s.includes("disetujui") || s === "setuju"
-  ) return "Disetujui";
+    s.includes("cancel") || s.includes("canceled") || s.includes("cancelled") ||
+    s.includes("batal")  || s.includes("dibatal")
+  ) return "Dibatalkan";
+
   if (
-    s.includes("reject") || s.includes("declin") ||
-    s.includes("ditolak") || s === "tolak"
-  ) return "Ditolak";
-  if (
-    s === "" ||
-    s.includes("pending") ||
-    s.includes("process") ||
-    s.includes("proses") ||
-    s.includes("menunggu") ||
-    s.includes("waiting") ||
-    s.includes("review")
+    s === "" || s.includes("pending") || s.includes("process") ||
+    s.includes("proses") || s.includes("menunggu") ||
+    s.includes("waiting") || s.includes("review")
   ) return "Menunggu";
 
   return "Menunggu";
@@ -57,7 +60,6 @@ function toFileURL(v) {
       : `storage/${clean}`;
   return `${ORIGIN}/${finalPath}`;
 }
-
 function filenameOf(v, fallback = "-") {
   if (!v) return fallback;
   try {
@@ -69,18 +71,13 @@ function filenameOf(v, fallback = "-") {
     return last || fallback;
   }
 }
-
-const MONTHS = [
-  "Januari","Februari","Maret","April","Mei","Juni",
-  "Juli","Agustus","September","Oktober","November","Desember",
-];
+const MONTHS = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
 function formatTanggal(val) {
   if (!val) return "-";
   const d = new Date(val);
   if (isNaN(d)) return String(val);
   return `${String(d.getDate()).padStart(2, "0")} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 }
-
 
 export default function VerifikasiPersetujuan() {
   const [showDropdown, setShowDropdown] = useState(false);
@@ -98,13 +95,6 @@ export default function VerifikasiPersetujuan() {
   const location = useLocation();
   const adminName = localStorage.getItem("adminName") || "Admin";
 
-  const menuItems = [
-    { label: "Dashboard",                icon: "streamline-plump:user-pin-remix",   path: "/admin/dashboard" },
-    { label: "Verifikasi & Persetujuan", icon: "streamline-sharp:time-lapse-solid", path: "/admin/verifikasi" },
-    { label: "Kartu Visitor",            icon: "solar:card-recive-outline",         path: "/admin/kartu-visitor" },
-    { label: "Riwayat Pengembalian",     icon: "solar:card-search-broken",          path: "/admin/riwayat" },
-  ];
-
   useEffect(() => {
     (async () => {
       try {
@@ -116,13 +106,12 @@ export default function VerifikasiPersetujuan() {
     })();
   }, []);
 
-  // Debounce input pencarian (250ms)
   useEffect(() => {
     const t = setTimeout(() => setQueryDebounced(query.trim()), 250);
     return () => clearTimeout(t);
   }, [query]);
 
-  // Ambil daftar verifikasi semua status
+  // Ambil SEMUA verifikasi (termasuk DIBATALKAN) — backend sekarang sudah dicari via beberapa endpoint kandidat di api.js
   const fetchList = async () => {
     const reqId = ++lastRequestId.current;
     setLoading(true);
@@ -145,17 +134,11 @@ export default function VerifikasiPersetujuan() {
           x.visit_date || x.visit_start_date || x.date || x.created_at;
 
         const tanggalSortRaw =
-          x.created_at ||
-          x.submitted_at ||
-          x.updated_at ||
-          x.visit_start_date ||
-          x.visit_date ||
-          x.date;
+          x.created_at || x.submitted_at || x.updated_at ||
+          x.visit_start_date || x.visit_date || x.date;
 
         const docAny =
-          x.document_url ||
-          x.attachment_url ||
-          x.document_path ||
+          x.document_url || x.attachment_url || x.document_path ||
           (Array.isArray(x.documents) ? (x.documents[0]?.url || x.documents[0]) : "") ||
           x.document;
 
@@ -164,12 +147,8 @@ export default function VerifikasiPersetujuan() {
         const dokumenName = x.document_original_name || x.original_name || filenameOf(docAny, "-");
 
         const statusRaw =
-          x.status ??
-          x.approval_status ??
-          x.review_status ??
-          x.state ??
-          x.application_status ??
-          "";
+          x.status ?? x.approval_status ?? x.review_status ??
+          x.state  ?? x.application_status ?? "";
 
         const status = mapStatusID(statusRaw);
 
@@ -191,6 +170,7 @@ export default function VerifikasiPersetujuan() {
         };
       });
 
+      // PENTING: TIDAK memfilter “Dibatalkan”. Biarkan ikut tampil di “Semua”.
       list.sort((a, b) => b.sortKey - a.sortKey);
       if (reqId === lastRequestId.current) setRows(list);
     } catch (e) {
@@ -209,23 +189,17 @@ export default function VerifikasiPersetujuan() {
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
   }, []);
-
   useEffect(() => {
     const onDirty = (e) => {
-      if (!e?.detail || e.detail.type === "verification") {
-        fetchList();
-      }
+      if (!e?.detail || e.detail.type === "verification") fetchList();
     };
     window.addEventListener("app:data-dirty", onDirty);
     return () => window.removeEventListener("app:data-dirty", onDirty);
   }, []);
 
-  // tutup dropdown saat klik di luar
   useEffect(() => {
     function handleClickOutside(e) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setShowDropdown(false);
-      }
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setShowDropdown(false);
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -236,25 +210,22 @@ export default function VerifikasiPersetujuan() {
     const qq = queryDebounced.toLowerCase();
     if (!qq) return rows;
     return rows.filter((r) =>
-      [r.nama || "", r.jenis || "", r.reference || ""]
-        .join(" ")
-        .toLowerCase()
-        .includes(qq)
+      [r.nama || "", r.jenis || "", r.reference || ""].join(" ").toLowerCase().includes(qq)
     );
   }, [rows, queryDebounced]);
 
+  // Hanya tiga filter (tanpa “Dibatalkan”). “Dibatalkan” tetap terlihat saat filter “Semua”.
   const filtered = useMemo(() => {
     if (statusFilter === "Semua") return searched;
     return searched.filter((r) => r.status === statusFilter);
   }, [searched, statusFilter]);
 
-  // stat counters
+  // counter (tidak memasukkan Dibatalkan dalam badge count karena tidak ada tombolnya)
   const pendingCount  = useMemo(() => rows.filter((r) => r.status === "Menunggu").length, [rows]);
   const approvedCount = useMemo(() => rows.filter((r) => r.status === "Disetujui").length, [rows]);
-  const rejectedCount = useMemo(() => rows.filter((r) => r.status === "Ditolak").length, [rows]);
+  const rejectedCount = useMemo(() => rows.filter((r) => r.status === "Ditolak").length,   [rows]);
 
   const handleMenuClick = (path) => navigate(path);
-
   const handleLogout = async () => {
     try { await adminLogout(); } catch {}
     localStorage.removeItem("token");
@@ -266,14 +237,11 @@ export default function VerifikasiPersetujuan() {
   const onOpenDoc = async (row, e) => {
     e.preventDefault();
     if (!row?.dokumenPath && !row?.dokumenUrl) return;
-
     try {
       const resp = await fetchDocumentBlob(row.dokumenPath || row.dokumenUrl);
       const blobUrl = URL.createObjectURL(resp.data);
       window.open(blobUrl, "_blank", "noopener,noreferrer");
-
-      const name =
-        filenameFromHeaders(resp, row.dokumenName) || row.dokumenName || "dokumen";
+      const name = filenameFromHeaders(resp, row.dokumenName) || row.dokumenName || "dokumen";
       try {
         const a = document.createElement("a");
         a.href = blobUrl;
@@ -301,9 +269,9 @@ export default function VerifikasiPersetujuan() {
 
         <nav className="flex flex-col gap-4 mt-2">
           {[
-            { label: "Dashboard", icon: "streamline-plump:user-pin-remix", path: "/admin/dashboard" },
+            { label: "Dashboard", icon: "streamline-plump:user-pin-remix",   path: "/admin/dashboard" },
             { label: "Verifikasi & Persetujuan", icon: "streamline-sharp:time-lapse-solid", path: "/admin/verifikasi" },
-            { label: "Kartu Visitor", icon: "solar:card-recive-outline", path: "/admin/kartu-visitor" },
+            { label: "Kartu Visitor", icon: "solar:card-recive-outline",     path: "/admin/kartu-visitor" },
             { label: "Riwayat Pengembalian", icon: "solar:card-search-broken", path: "/admin/riwayat" },
           ].map((item) => {
             const isActive = location.pathname === item.path;
@@ -312,10 +280,9 @@ export default function VerifikasiPersetujuan() {
                 key={item.label}
                 onClick={() => handleMenuClick(item.path)}
                 className={`flex items-center gap-4 px-4 py-2 text-left transition-all hover:opacity-80
-                  ${
-                    isActive
-                      ? "bg-gradient-to-r from-[#6A8BB0] to-[#5E5BAD] text-white font-semibold rounded-[15px]"
-                      : "bg-transparent text-[#474646] font-semibold hover:bg-gray-100 rounded-[15px]"
+                  ${isActive
+                    ? "bg-gradient-to-r from-[#6A8BB0] to-[#5E5BAD] text-white font-semibold rounded-[15px]"
+                    : "bg-transparent text-[#474646] font-semibold hover:bg-gray-100 rounded-[15px]"
                   } text-[17px]`}
                 style={isActive ? { boxShadow: "0 2px 8px rgba(90,90,140,0.07)" } : {}}
               >
@@ -407,32 +374,23 @@ export default function VerifikasiPersetujuan() {
               />
             </div>
 
-            {/* Filters  */}
-            <div
-              className="w-full md:w-auto overflow-x-auto no-scrollbar"
-              style={{ WebkitOverflowScrolling: "touch" }}
-            >
+            {/* Filters: tanpa 'Dibatalkan' */}
+            <div className="w-full md:w-auto overflow-x-auto no-scrollbar" style={{ WebkitOverflowScrolling: "touch" }}>
               <div className="inline-flex flex-nowrap whitespace-nowrap gap-x-2">
                 {[
-                  { key: "Semua",     badge: null },
-                  { key: "Menunggu",  badge: "pending" },
-                  { key: "Disetujui", badge: "approved" },
-                  { key: "Ditolak",   badge: "rejected" },
-                ].map(({ key, badge }) => {
+                  { key: "Semua"     },
+                  { key: "Menunggu"  },
+                  { key: "Disetujui" },
+                  { key: "Ditolak"   },
+                ].map(({ key }) => {
                   const isActive = statusFilter === key;
-                  const bg =
-                    key === "Semua"
-                      ? "#F4F4F4"
-                      : (statusConfig[key]?.bg || "#F4F4F4");
-                  const color =
-                    key === "Semua"
-                      ? "#474646"
-                      : (statusConfig[key]?.color || "#474646");
+                  const bg = key === "Semua" ? "#F4F4F4" : (statusConfig[key]?.bg || "#F4F4F4");
+                  const color = key === "Semua" ? "#474646" : (statusConfig[key]?.color || "#474646");
 
                   const count =
-                    key === "Menunggu"  ? pendingCount  :
-                    key === "Disetujui" ? approvedCount :
-                    key === "Ditolak"   ? rejectedCount : null;
+                    key === "Menunggu"  ? rows.filter(r => r.status === "Menunggu").length :
+                    key === "Disetujui" ? rows.filter(r => r.status === "Disetujui").length :
+                    key === "Ditolak"   ? rows.filter(r => r.status === "Ditolak").length : null;
 
                   return (
                     <button
@@ -461,27 +419,14 @@ export default function VerifikasiPersetujuan() {
             <table className="w-full">
               <thead>
                 <tr style={{ background: "#F4F4F4" }}>
-                  <th className="py-3 px-2 text-center font-poppins font-semibold text-[#474646] text-[16px]">
-                    Nama<br />Pemohon
-                  </th>
-                  <th className="py-3 px-2 text-center font-poppins font-semibold text-[#474646] text-[16px]">
-                    Jenis<br />Kunjungan
-                  </th>
-                  <th className="py-3 px-2 text-center font-poppins font-semibold text-[#474646] text-[16px]">
-                    Tanggal<br />Kunjungan
-                  </th>
-                  <th className="py-3 px-2 text-center font-poppins font-semibold text-[#474646] text-[16px]">
-                    Dokumen
-                  </th>
-                  <th className="py-3 px-2 text-center font-poppins font-semibold text-[#474646] text-[16px]">
-                    Status
-                  </th>
-                  <th className="py-3 px-2 text-center font-poppins font-semibold text-[#474646] text-[16px]">
-                    Aksi
-                  </th>
+                  <th className="py-3 px-2 text-center font-poppins font-semibold text-[#474646] text-[16px]">Nama<br/>Pemohon</th>
+                  <th className="py-3 px-2 text-center font-poppins font-semibold text-[#474646] text-[16px]">Jenis<br/>Kunjungan</th>
+                  <th className="py-3 px-2 text-center font-poppins font-semibold text-[#474646] text-[16px]">Tanggal<br/>Kunjungan</th>
+                  <th className="py-3 px-2 text-center font-poppins font-semibold text-[#474646] text-[16px]">Dokumen</th>
+                  <th className="py-3 px-2 text-center font-poppins font-semibold text-[#474646] text-[16px]">Status</th>
+                  <th className="py-3 px-2 text-center font-poppins font-semibold text-[#474646] text-[16px]">Aksi</th>
                 </tr>
               </thead>
-
               <tbody>
                 {loading ? (
                   Array.from({ length: 5 }).map((_, i) => (
@@ -496,16 +441,9 @@ export default function VerifikasiPersetujuan() {
                 ) : filtered.length > 0 ? (
                   filtered.map((row, idx) => (
                     <tr key={row.reference || `${row.nama}-${idx}`} className={idx % 2 === 0 ? "" : "bg-[#F8F8F8]"}>
-                      <td className="py-2 px-2 text-center font-poppins font-semibold text-[15px] text-[#474646]">
-                        {row.nama}
-                      </td>
-                      <td className="py-2 px-2 text-center font-poppins font-semibold text-[15px] text-[#474646]">
-                        {row.jenis}
-                      </td>
-                      <td className="py-2 px-2 text-center font-poppins font-semibold text-[15px] text-[#474646]">
-                        {formatTanggal(row.tanggal)}
-                      </td>
-
+                      <td className="py-2 px-2 text-center font-poppins font-semibold text-[15px] text-[#474646]">{row.nama}</td>
+                      <td className="py-2 px-2 text-center font-poppins font-semibold text-[15px] text-[#474646]">{row.jenis}</td>
+                      <td className="py-2 px-2 text-center font-poppins font-semibold text-[15px] text-[#474646]">{formatTanggal(row.tanggal)}</td>
                       <td className="py-2 px-2 text-center">
                         {row.dokumenUrl ? (
                           <a
@@ -523,7 +461,6 @@ export default function VerifikasiPersetujuan() {
                           <span className="text-[#999]">-</span>
                         )}
                       </td>
-
                       <td className="py-2 px-2 text-center">
                         <div
                           className="font-poppins font-semibold text:[15px] px-5 py-1 rounded-[8px] inline-flex justify-center items-center whitespace-nowrap"
@@ -536,14 +473,11 @@ export default function VerifikasiPersetujuan() {
                           {statusConfig[row.status]?.label || row.status || "-"}
                         </div>
                       </td>
-
                       <td className="py-2 px-2 text-center">
                         <button
                           className="px-5 py-1 font-poppins font-semibold text-white text-[15px] rounded-[8px] transition-all whitespace-nowrap"
                           style={{ background: "#8E8E8E" }}
-                          onClick={() =>
-                            navigate(`/admin/detail/${encodeURIComponent(row.reference || "")}`)
-                          }
+                          onClick={() => navigate(`/admin/detail/${encodeURIComponent(row.reference || "")}`)}
                           disabled={!row.reference}
                           title={!row.reference ? "Reference tidak tersedia" : "Lihat Detail"}
                         >
@@ -570,11 +504,8 @@ export default function VerifikasiPersetujuan() {
         .font-poppins { font-family: 'Poppins', sans-serif; }
         input::placeholder { font-family: 'Poppins', sans-serif; font-weight: 300; font-style: italic; }
         body { overflow-x: hidden; }
-
-        /* sembunyikan scrollbar horizontal kecil untuk filter */
         .no-scrollbar::-webkit-scrollbar { height: 0px; }
         .no-scrollbar { scrollbar-width: none; }
-
         @media (max-width: 900px) {
           aside { width: 100vw !important; position: static !important; }
           main { margin-left: 0 !important; }

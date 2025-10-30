@@ -22,22 +22,39 @@ export default function VisitorCardStatus() {
 
   const handleCheckStatus = async () => {
     const nomor = document.getElementById("nomor")?.value?.trim();
+
     if (!nomor) return alert("Masukkan nomor pengajuan!");
+    
     setLoading(true);
     setError("");
+    
     try {
+      //  API untuk cek status
       const res = await checkStatus({ reference_number: nomor });
 
+      // Ambil data dari response
       const dataRoot = res?.data?.data ?? res?.data ?? {};
-      const status = (dataRoot?.status || "").toLowerCase();
+      const status = (dataRoot?.status || "").toLowerCase(); 
+
 
       if (status === "approved" || status === "disetujui") {
         navigate("/status/approved", { state: { nomor } });
-      } else if (status === "rejected" || status === "ditolak") {
+      } 
+      else if (status === "rejected" || status === "ditolak") {
         navigate("/status/rejected", { state: { nomor } });
-      } else {
+      } 
+      else if (
+        status === "cancelled" ||   
+        status === "canceled" ||   
+        status === "dibatalkan" || 
+        status.includes("batal")    
+      ) {
+        navigate("/status/cancelled", { state: { nomor } });
+      } 
+      else {
         navigate("/status/processing", { state: { nomor } });
       }
+      
     } catch (err) {
       setError("Nomor pengajuan tidak ditemukan atau server error.");
     } finally {
@@ -79,6 +96,7 @@ export default function VisitorCardStatus() {
 
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-[500px] z-20">
         <div className="bg-white rounded-xl shadow-lg p-8 flex flex-col items-center">
+
           <div className="flex items-center gap-4 mb-6 border-b border-gray-200 pb-5 w-full justify-center">
             <div className="bg-gradient-to-r from-[#6A8BB0] to-[#5E5BAD] text-white p-3 rounded-full shadow-md flex items-center justify-center">
               <FaSearch className="text-2xl" />
@@ -97,14 +115,16 @@ export default function VisitorCardStatus() {
               defaultValue={submissionNumber}
               className="w-full border border-gray-300 rounded-lg p-3 mb-5 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-300"
             />
+
             <button
-              className="bg-gradient-to-r from-[#6A8BB0] to-[#5E5BAD] text-white font-semibold py-3 px-6 rounded-lg w-full cursor-pointer hover:opacity-90 transition-opacity"
+              className="bg-gradient-to-r from-[#6A8BB0] to-[#5E5BAD] text-white font-semibold py-3 px-6 rounded-lg w-full cursor-pointer hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={handleCheckStatus}
               disabled={loading}
             >
               {loading ? 'Memeriksa...' : 'CEK STATUS'}
             </button>
-            {error && <span className="text-red-500 mt-2">{error}</span>}
+            
+            {error && <span className="text-red-500 mt-2 text-sm">{error}</span>}
           </div>
         </div>
       </div>

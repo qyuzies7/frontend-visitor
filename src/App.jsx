@@ -13,6 +13,7 @@ import CekStatus from "./pages/CekStatus";
 import HasilCek from "./pages/HasilCek";
 import HasilTolak from "./pages/HasilTolak";
 import HasilProses from "./pages/HasilProses";
+import HasilDibatalkan from "./pages/HasilDibatalkan";
 
 import {
   AdminLogin,
@@ -41,8 +42,9 @@ function App() {
         <Route path="/apply" element={<Navigate to="/apply/step-1" replace />} />
         <Route path="/status" element={<CekStatus />} />
         <Route path="/status/approved" element={<HasilCek />} />
-        <Route path="/status/rejected" element={<HasilTolak />} />
-        <Route path="/status/processing" element={<HasilProses />} />
+  <Route path="/status/rejected" element={<HasilTolak />} />
+  <Route path="/status/cancelled" element={<HasilDibatalkan />} />
+  <Route path="/status/processing" element={<HasilProses />} />
 
         <Route path="/admin" element={<AdminLogin />} />
         <Route

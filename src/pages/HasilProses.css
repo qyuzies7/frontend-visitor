@@ -164,7 +164,7 @@ html, body {
 
 .status-value-disetujui {
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
   color: #F2B422;
 }
 
@@ -287,6 +287,12 @@ html, body {
   width: 18px;
   height: 18px;
   object-fit: contain;
+  transition: filter 0.3s ease;
+}
+
+.re-apply-button-tolak:hover .reapply-icon-tolak,
+.contact-button-tolak:hover .phone-icon-tolak {
+  filter: brightness(0) invert(1);
 }
 
 

@@ -100,7 +100,17 @@ const Step4 = ({ formData, prevStep, nextStep }) => {
       let response;
       if (payload.document instanceof File) {
         const fd = new FormData();
-        Object.entries(payload).forEach(([k, v]) => fd.append(k, v ?? ''));
+        Object.entries(payload).forEach(([k, v]) => {
+          if (typeof v === 'boolean') {
+            fd.append(k, v ? '1' : '0');
+            return;
+          }
+          if (v instanceof File) {
+            fd.append(k, v);
+            return;
+          }
+          fd.append(k, v ?? '');
+        });
         response = await submitVisitorCard(fd);
       } else {
         response = await submitVisitorCard(payload);
