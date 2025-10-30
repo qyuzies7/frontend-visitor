@@ -331,6 +331,47 @@ const HasilProses = () => {
               <span className="status-label">Status Saat Ini</span>
               <span className="status-value-disetujui">{data?.status || '-'}</span>
             </div>
+            <div className="info-item">
+            <span className="info-label">Nama Penanggung Jawab (PIC)</span>
+            <span className="info-value">{data?.pic_name || '-'}</span>
+          </div>
+           <div className="info-item">
+            <span className="info-label">Jabatan Penanggung Jawab</span>
+            <span className="info-value">{data?.pic_position || '-'}</span>
+          </div>
+           <div className="info-item">
+            <span className="info-label">Layanan Pendampingan</span>
+            <span className="info-value">{data?.assistance_service || '-'}</span>
+          </div>
+
+           <div className="info-item">
+            <span className="info-label">Pintu Yang Diajukan</span>
+            <span className="info-value">{data?.access_door || '-'}</span>
+          </div>
+           <div className="info-item">
+            <span className="info-label">Jumlah & Jenis Kendaraan</span>
+            <span className="info-value">{data?.vehicle_type || '-'}</span>
+          </div>
+           <div className="info-item">
+            <span className="info-label">Waktu Akses</span>
+            <span className="info-value">{data?.access_time || '-'}</span>
+          </div>
+           <div className="info-item">
+            <span className="info-label">Nopol Kendaraan</span>
+            <span className="info-value">{data?.vehicle_plate || '-'}</span>
+          </div>
+            <div className="info-item">
+            <span className="info-label">Tujuan Akses</span>
+            <span className="info-value">{data?.access_purpose || '-'}</span>
+          </div>
+            <div className="info-item">
+            <span className="info-label">Pendampingan Protokoler</span>
+            <span className="info-value">{data?.protokoler_count || '-'}</span>
+          </div>
+            <div className="info-item">
+            <span className="info-label">Jumlah Pendampingan Protokoler</span>
+            <span className="info-value">{data?.need_protokoler_escort || '-'}</span>
+          </div>
           </div>
         </div>
 

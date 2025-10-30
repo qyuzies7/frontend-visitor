@@ -87,6 +87,7 @@ const Step4 = ({ formData, prevStep, nextStep }) => {
         if (mapFields[k] !== undefined) payload[mapFields[k]] = v;
       });
 
+      // pastikan tipe yang dikirim sesuai: gunakan boolean lokal but convert saat mengirim
       payload.need_protokoler_escort = needEscort;        
       payload.rejection_reason = '';
 
@@ -98,21 +99,29 @@ const Step4 = ({ formData, prevStep, nextStep }) => {
       }
 
       let response;
+      // Jika ada file maka gunakan FormData — pastikan nilai boolean dikonversi ke '1'/'0'
       if (payload.document instanceof File) {
         const fd = new FormData();
         Object.entries(payload).forEach(([k, v]) => {
-          if (typeof v === 'boolean') {
+          // kirim boolean sebagai '1' atau '0' supaya Laravel boolean rule selalu cocok
+          if (k === 'need_protokoler_escort') {
             fd.append(k, v ? '1' : '0');
             return;
           }
+          // file harus di-append sebagai file
           if (v instanceof File) {
             fd.append(k, v);
             return;
           }
+          // jika null/undefined -> kosongkan string
           fd.append(k, v ?? '');
         });
         response = await submitVisitorCard(fd);
       } else {
+        // untuk JSON kirim numeric 1/0 (atau boolean) — 1/0 lebih konsisten
+        if (typeof payload.need_protokoler_escort !== 'undefined') {
+          payload.need_protokoler_escort = payload.need_protokoler_escort ? 1 : 0;
+        }
         response = await submitVisitorCard(payload);
       }
 
