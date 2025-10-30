@@ -16,11 +16,9 @@ const statusConfig = {
   Menunggu:   { bg: "#FEF5E7", color: "#D69E2E", label: "Menunggu" },
   Disetujui:  { bg: "#E7FEED", color: "#47D62E", label: "Disetujui" },
   Ditolak:    { bg: "#FFDEDB", color: "#FF0000", label: "Ditolak" },
-  // Style untuk DIBATALKAN agar berbeda (abu-abu):
   Dibatalkan: { bg: "#F2F2F2", color: "#7A7A7A", label: "Dibatalkan" },
 };
 
-// Normalisasi status backend -> ID (menangkap 'cancelled/canceled/dibatalkan')
 function mapStatusID(raw) {
   if (raw === 1 || raw === "1" || String(raw).toLowerCase() === "true") return "Disetujui";
   if (raw === 2 || raw === "2") return "Ditolak";
@@ -35,7 +33,6 @@ function mapStatusID(raw) {
   if (s.includes("reject") || s.includes("declin") || s.includes("ditolak") || s === "tolak")
     return "Ditolak";
 
-  // tangkap bentuk pembatalan apapun
   if (
     s.includes("cancel") || s.includes("canceled") || s.includes("cancelled") ||
     s.includes("batal")  || s.includes("dibatal")
@@ -111,7 +108,6 @@ export default function VerifikasiPersetujuan() {
     return () => clearTimeout(t);
   }, [query]);
 
-  // Ambil SEMUA verifikasi (termasuk DIBATALKAN) — backend sekarang sudah dicari via beberapa endpoint kandidat di api.js
   const fetchList = async () => {
     const reqId = ++lastRequestId.current;
     setLoading(true);
@@ -170,7 +166,6 @@ export default function VerifikasiPersetujuan() {
         };
       });
 
-      // PENTING: TIDAK memfilter “Dibatalkan”. Biarkan ikut tampil di “Semua”.
       list.sort((a, b) => b.sortKey - a.sortKey);
       if (reqId === lastRequestId.current) setRows(list);
     } catch (e) {
@@ -214,13 +209,11 @@ export default function VerifikasiPersetujuan() {
     );
   }, [rows, queryDebounced]);
 
-  // Hanya tiga filter (tanpa “Dibatalkan”). “Dibatalkan” tetap terlihat saat filter “Semua”.
   const filtered = useMemo(() => {
     if (statusFilter === "Semua") return searched;
     return searched.filter((r) => r.status === statusFilter);
   }, [searched, statusFilter]);
 
-  // counter (tidak memasukkan Dibatalkan dalam badge count karena tidak ada tombolnya)
   const pendingCount  = useMemo(() => rows.filter((r) => r.status === "Menunggu").length, [rows]);
   const approvedCount = useMemo(() => rows.filter((r) => r.status === "Disetujui").length, [rows]);
   const rejectedCount = useMemo(() => rows.filter((r) => r.status === "Ditolak").length,   [rows]);
