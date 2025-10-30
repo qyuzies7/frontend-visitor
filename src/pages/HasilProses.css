@@ -302,3 +302,40 @@ html, body {
     grid-template-columns: 1fr;
   }
 }
+
+/* --- Initial loading spinner (same as HasilCek) --- */
+.initial-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 60vh;
+  width: 100%;
+  padding: 40px 0;
+  box-sizing: border-box;
+}
+
+.initial-loading-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 6px solid rgba(0,0,0,0.08);
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: hc-spin 1s linear infinite;
+  box-sizing: border-box;
+}
+
+@keyframes hc-spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinner-text {
+  color: #555;
+  font-size: 14px;
+}
