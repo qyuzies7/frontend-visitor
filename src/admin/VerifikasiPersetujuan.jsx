@@ -429,15 +429,7 @@ export default function VerifikasiPersetujuan() {
               </thead>
               <tbody>
                 {loading ? (
-                  Array.from({ length: 5 }).map((_, i) => (
-                    <tr key={`sk-${i}`}>
-                      {Array.from({ length: 6 }).map((__, j) => (
-                        <td key={j} className="py-3 px-2">
-                          <span className="block w-full h-5 bg-gray-200 animate-pulse rounded" />
-                        </td>
-                      ))}
-                    </tr>
-                  ))
+                  <tr><td colSpan={6} className="py-6 text-center text-[#6b7280]">Memuat…</td></tr>
                 ) : filtered.length > 0 ? (
                   filtered.map((row, idx) => (
                     <tr key={row.reference || `${row.nama}-${idx}`} className={idx % 2 === 0 ? "" : "bg-[#F8F8F8]"}>

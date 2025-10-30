@@ -739,6 +739,17 @@ export default function RiwayatPengembalian() {
                 </span>
                 <span className="font-poppins font-medium text-[18px] leading-[36px] text-[#474646]">{adminName}</span>
               </button>
+              {showDropdown && (
+                <div className="absolute top-[62px] right-0 bg-white rounded-[12px] shadow-lg px-6 py-3 z-20 border min-w-[146px] flex items-center gap-3">
+                  <Icon icon="ic:round-logout" width={34} color="#d61d1d" />
+                  <button
+                    className="w-full text-left text-[#474646] font-poppins font-medium text-[18px] py-2 hover:bg-[#F1F2F6] rounded-md transition-colors"
+                    onClick={handleLogout}
+                  >
+                    Log Out
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

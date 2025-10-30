@@ -204,15 +204,11 @@ export default function Dashboard() {
         verificationsRes,
         inTodayRes,
         outTodayRes,
-        damagedRes,
-        lostRes,
       ] = await Promise.all([
         getActiveCards(),       
         getVerificationsAll(),  
         getTodayIssued(),
         getTodayReturned(),
-        getDamagedCards(),
-        getLostCards(),
       ]);
 
       if (reqId !== lastRequestId.current) return;
@@ -233,8 +229,9 @@ export default function Dashboard() {
 
       const activeDamaged = activeArr.filter(isDamaged).length;
       const activeLost = activeArr.filter(isLost).length;
-      const damagedTotal = parseFlexibleTotal(damagedRes) + activeDamaged;
-      const lostTotal = parseFlexibleTotal(lostRes) + activeLost;
+
+      const damagedTotal = activeDamaged;
+      const lostTotal = activeLost;
 
       setStats({
         aktif: totalAktif,

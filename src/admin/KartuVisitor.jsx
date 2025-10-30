@@ -304,6 +304,7 @@ function BoxPetugas({ label, value }) {
 
 export default function KartuVisitor() {
   const [dummyData, setDummyData] = useState([]); 
+  const [loading, setLoading] = useState(true);
   const [showPopup, setShowPopup] = useState(false);
   const [popupType, setPopupType] = useState("");
   const [selectedKey, setSelectedKey] = useState(null);
@@ -489,12 +490,15 @@ export default function KartuVisitor() {
     });
   }
 
-  async function reloadData() {
+  async function reloadData(opts = {}) {
+    setLoading(true);
     try {
-      // anti-cache untuk daftar dinamis
+      // anti-cache for callers that explicitly request it: opts.ttl === 0
+      // default to cached reads to make initial load faster
+      const ttl = opts.ttl ?? 60000;
       const [approvedRes, activeRes] = await Promise.all([
-        getApprovedCards({ ttl: 0 }),
-        getActiveCards({ ttl: 0 }),
+        getApprovedCards({ ttl }),
+        getActiveCards({ ttl }),
       ]);
 
       const approvedRaw = Array.isArray(approvedRes?.data)
@@ -512,9 +516,11 @@ export default function KartuVisitor() {
       const withCache = applyMetaCache(reconciled);
 
       setDummyData(withCache);
+      setLoading(false);
     } catch (err) {
       console.error("reloadData gagal:", err);
       setDummyData(applyMetaCache([]));
+      setLoading(false);
     }
   }
 
@@ -691,7 +697,7 @@ export default function KartuVisitor() {
         notifyDirtyCards();
       } catch {}
       try {
-        await reloadData();
+        await reloadData({ ttl: 0 });
       } catch (_e) {}
     } catch (e) {
       const msg =
@@ -975,7 +981,7 @@ export default function KartuVisitor() {
       );
 
       try {
-        await reloadData();
+        await reloadData({ ttl: 0 });
       } catch (_err) {}
 
       setShowPopup(false);
@@ -1188,7 +1194,9 @@ export default function KartuVisitor() {
                   </tr>
                 </thead>
                 <tbody>
-                  {dummyData.map((row, idx) => {
+                  {loading ? (
+                    <tr><td colSpan={6} className="py-6 text-center text-[#6b7280]">Memuat…</td></tr>
+                  ) : dummyData.map((row, idx) => {
                     const statusAuto = getStatusKartu(row.tanggalKembali, {
                       isActive: row.isActive,
                       aksi: row.aksi,

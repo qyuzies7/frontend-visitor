@@ -46,7 +46,7 @@ function stableStringifyParams(obj) {
   for (const k of keys) res[k] = obj[k];
   return JSON.stringify(res);
 }
-export async function cachedGet(url, { params, ttl = 10000, cfg = {} } = {}) {
+export async function cachedGet(url, { params, ttl = 60000, cfg = {} } = {}) {
   const key = makeKey(url, params);
   const now = Date.now();
   const hit = __getCache.get(key);
@@ -174,11 +174,11 @@ export const getAdminMe = () => http.get(`/admin/me`);
 
 export const getActiveVisitors = () => http.get(`/admin/dashboard/active-visitors`);
 export const getPendingCount = () => http.get(`/admin/dashboard/pending-count`);
-export const getTodayIssued = () => cachedGet(`/admin/dashboard/today-issued`, { ttl: 10000 });
-export const getTodayReturned = () => cachedGet(`/admin/dashboard/today-returned`, { ttl: 10000 });
+export const getTodayIssued = () => cachedGet(`/admin/dashboard/today-issued`, { ttl: 60000 });
+export const getTodayReturned = () => cachedGet(`/admin/dashboard/today-returned`, { ttl: 60000 });
 
 export const getDamagedCards = (opts = {}) => {
-  const ttl = opts.ttl ?? 0;
+  const ttl = opts.ttl ?? 60000;
   if (typeof cachedGet === "function") {
     return cachedGet(`/admin/dashboard/damaged-cards`, {
       ttl,
@@ -190,7 +190,7 @@ export const getDamagedCards = (opts = {}) => {
   return http.get(url, { headers: { "Cache-Control": "no-cache" } }).then((r) => r);
 };
 export const getLostCards = (opts = {}) => {
-  const ttl = opts.ttl ?? 0;
+  const ttl = opts.ttl ?? 60000;
   if (typeof cachedGet === "function") {
     return cachedGet(`/admin/dashboard/lost-cards`, {
       ttl,
@@ -203,7 +203,7 @@ export const getLostCards = (opts = {}) => {
 };
 
 export const getApprovedCards = (opts = {}) => {
-  const ttl = opts.ttl ?? 0;
+  const ttl = opts.ttl ?? 60000;
   const params = { _ts: Date.now(), ...(opts.params || {}) };
   if (typeof cachedGet === "function") {
     return cachedGet(`/admin/cards/approved`, {
@@ -256,6 +256,13 @@ const _pushUnique = (bucket, seen, items) => {
 
 
 export const getVerificationsAll = async (extraParams = {}) => {
+  // Quick path: try the main combined endpoint first — if backend supports it,
+  // this avoids firing many alternative endpoints and speeds up clients.
+  try {
+    const mainRes = await cachedGet(`/admin/verification`, { params: extraParams, ttl: 60000 });
+    const mainList = Array.isArray(mainRes?.data) ? mainRes.data : mainRes?.data?.data || [];
+    if (mainList && mainList.length) return { data: mainList };
+  } catch (_) {}
   const results = [];
   const seen = new Set();
 
@@ -277,7 +284,7 @@ export const getVerificationsAll = async (extraParams = {}) => {
     candidates.map(([url, params]) =>
       cachedGet(url, {
         params: { ...extraParams, ...params },
-        ttl: 10000,
+        ttl: 60000,
       })
     )
   );
@@ -307,7 +314,13 @@ export const rejectVerification = (data) => http.post(`/admin/verification/rejec
 export const bulkVerificationAction = (data) => http.post(`/admin/verification/bulk-action`, data);
 
 export const getApprovedCardsLegacy = () => http.get(`/admin/cards/approved`);
-export const getReturnedCards = () => http.get(`/admin/cards/returned`);
+export const getReturnedCards = (opts = {}) => {
+  const ttl = opts.ttl ?? 60000;
+  if (typeof cachedGet === 'function') {
+    return cachedGet(`/admin/cards/returned`, { ttl, params: { _ts: Date.now() } });
+  }
+  return http.get(`/admin/cards/returned`);
+};
 export const issueCard = (data) => http.post(`/admin/cards/issue`, data);
 export const returnCard = (data) => http.post(`/admin/cards/return`, data);
 export const editCardCondition = (id, data) => http.put(`/admin/cards/${id}/condition`, data);
