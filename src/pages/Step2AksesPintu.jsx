@@ -129,6 +129,20 @@ const Step2AksesPintu = ({ formData, setFormData, nextStep, prevStep }) => {
           {opts.access_purpose.map((o) => (
             <option key={o.value} value={o.value}>{o.label}</option>
           ))}
+
+        </FormField>
+
+        <FormField
+          label="Apakah Anda membutuhkan pendampingan protokoler?"
+          name="needProtokolerEscort"
+          type="select"
+          value={escortStr}
+          onChange={handleChange}
+          error={errors.needProtokolerEscort}
+        >
+          <option value="">Pilih</option>
+          <option value="true">Ya</option>
+          <option value="false">Tidak</option>
         </FormField>
 
         <FormField
@@ -144,6 +158,7 @@ const Step2AksesPintu = ({ formData, setFormData, nextStep, prevStep }) => {
           {opts.protokoler_count.map((o) => (
             <option key={o.value} value={o.value}>{o.label}</option>
           ))}
+
         </FormField>
 
         <FormField
@@ -163,19 +178,6 @@ const Step2AksesPintu = ({ formData, setFormData, nextStep, prevStep }) => {
           error={errors.vehiclePlate}
           placeholder="contoh: AB 1234 CD, AB 5678 EF"
         />
-
-        <FormField
-          label="Apakah Anda membutuhkan pendampingan protokoler?"
-          name="needProtokolerEscort"
-          type="select"
-          value={escortStr}
-          onChange={handleChange}
-          error={errors.needProtokolerEscort}
-        >
-          <option value="">Pilih</option>
-          <option value="true">Ya</option>
-          <option value="false">Tidak</option>
-        </FormField>
 
         <div className="flex justify-between md:col-span-2 mt-4">
           <button

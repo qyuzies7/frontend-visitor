@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaCheckCircle } from 'react-icons/fa';
 
 const Step5 = ({ submissionNumber }) => {
   const navigate = useNavigate();
+
+  const [copied, setCopied] = useState(false);
 
   const handleCheckStatus = () => {
     navigate('/status', { 
@@ -16,6 +18,41 @@ const Step5 = ({ submissionNumber }) => {
 
   const handleBackToHome = () => {
     navigate('/');
+  };
+
+  const copyToClipboard = async () => {
+    const text = submissionNumber ?? '';
+    if (!text) return;
+    // Modern clipboard API
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (e) {
+      // Fallback for older browsers
+      try {
+        const el = document.createElement('textarea');
+        el.value = text;
+        el.setAttribute('readonly', '');
+        el.style.position = 'absolute';
+        el.style.left = '-9999px';
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+      } catch (err) {
+        // if copy fails, just return silently
+        return;
+      }
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  // allow keyboard activation (Enter / Space) for accessibility
+  const handleKeyDownCopy = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      copyToClipboard();
+    }
   };
 
   return (
@@ -31,13 +68,34 @@ const Step5 = ({ submissionNumber }) => {
 
       <div className="p-4 bg-blue-50 border border-blue-200 rounded-md mb-6 w-full max-w-xs mx-auto">
         <p className="text-xs text-gray-500 font-semibold mb-1">Nomor Pengajuan</p>
-        <h3 className="text-xl font-bold text-blue-600 truncate">{submissionNumber}</h3>
+
+        {/* Nomor pengajuan: bisa diketuk untuk menyalin */}
+        <h3
+          className="text-xl font-bold text-blue-600 truncate cursor-pointer select-all"
+          role="button"
+          tabIndex={0}
+          title="Ketuk untuk menyalin nomor pengajuan"
+          onClick={copyToClipboard}
+          onKeyDown={handleKeyDownCopy}
+          aria-label={`Nomor pengajuan ${submissionNumber}. Ketuk untuk menyalin.`}
+        >
+          {submissionNumber}
+        </h3>
+
+        {/* Konfirmasi kecil setelah tersalin */}
+        <div aria-live="polite" className="mt-2">
+          {copied ? (
+            <span className="text-sm text-green-600">Nomor disalin</span>
+          ) : (
+            <span className="text-sm text-gray-500">Ketuk nomor untuk menyalin</span>
+          )}
+        </div>
       </div>
 
       <div className="text-left mb-6 max-w-md mx-auto">
         <h4 className="font-semibold text-sm mb-3 text-center">Informasi Penting:</h4>
         <ul className="list-disc list-inside text-gray-700 text-sm space-y-2">
-          <li>Simpan nomor pengajuan untuk melacak status permohonan</li>
+          <li>Simpan dan salin nomor pengajuan untuk melacak status permohonan</li>
           <li>Cek status secara berkala untuk melihat status permohonan</li>
           <li>Hubungi (0274) 563-456 jika ada pertanyaan mendesak</li>
         </ul>

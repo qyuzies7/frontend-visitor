@@ -259,7 +259,20 @@ const HasilProses = () => {
     }
   };
 
-  if (loading) return <div>Loading...</div>;
+  if (loading)
+    return (
+      <div className="initial-loading">
+        <div
+          className="initial-loading-inner"
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+        >
+          <div className="spinner" aria-hidden="true" />
+          <div className="spinner-text">Memuat data...</div>
+        </div>
+      </div>
+  );
   if (error)   return <div className="text-red-500 p-4">{error}</div>;
   if (!data)   return <div className="p-4">Data kosong.</div>;
 
