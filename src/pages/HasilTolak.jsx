@@ -317,7 +317,7 @@ const HasilTolak = () => {
           </div>
            <div className="info-item">
             <span className="info-label">Layanan Pendampingan</span>
-            <span className="info-value">{data?.assistance_service || '-'}</span>
+            <span className="info-value">{prettyAssistanceLabel(data?.assistance_service)}</span>
           </div>
 
            <div className="info-item">
@@ -342,7 +342,7 @@ const HasilTolak = () => {
           </div>
             <div className="info-item">
             <span className="info-label">Pendampingan Protokoler</span>
-            <span className="info-value">{data?.need_protokoler_escort || '-'}</span>
+            <span className="info-value">{formatProtokolerEscort(data?.need_protokoler_escort)}</span>
           </div>
             <div className="info-item">
             <span className="info-label">Jumlah Pendampingan Protokoler</span>
