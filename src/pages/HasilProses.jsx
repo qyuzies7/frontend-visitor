@@ -46,11 +46,11 @@ function prettyAssistanceLabel(raw) {
 }
 
 function formatProtokolerEscort(raw) {
-  if (!raw) return "-";
+  if (!raw) return "Tidak";
   const val = String(raw).toLowerCase().trim();
   if (val === "true" || val === "1" || val === "ya" || val === "yes") return "Ya";
   if (val === "false" || val === "0" || val === "tidak" || val === "no") return "Tidak";
-  return "-";
+  return "Tidak";
 }
 
 const HasilProses = () => {
