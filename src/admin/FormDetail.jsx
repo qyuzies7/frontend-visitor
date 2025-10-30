@@ -569,46 +569,49 @@ export default function FormDetail() {
   return (
     <div className="min-h-screen flex bg-[#6A8BB0] font-poppins">
       {/* Sidebar */}
-      <aside
-        className="bg-[#E6E6E6] flex flex-col py-8 px-7 border-r border-[#eaeaea] h-screen fixed top-0 left-0 z-20"
-        style={{ width: 360 }}
-      >
-        <img src={kaiLogo} alt="KAI Logo" className="w-[120px] mb-6 mx-auto" />
-        <div className="text-[18px] font-poppins font-medium text-[#242424] text-center mb-7 leading-[20px]">
-          Admin Panel Kartu Visitor
-        </div>
-        <div className="w-full flex justify-center mb-12">
-          <div style={{ width: "100%", height: 2, background: "#C4C4C4", borderRadius: 2, margin: "0 auto" }} />
-        </div>
-        <nav className="flex flex-col gap-4 mt-2">
-          {[
-            { label: "Dashboard", icon: "streamline-plump:user-pin-remix", path: "/admin/dashboard" },
-            { label: "Verifikasi & Persetujuan", icon: "streamline-sharp:time-lapse-solid", path: "/admin/verifikasi" },
-            { label: "Kartu Visitor", icon: "solar:card-recive-outline", path: "/admin/kartu-visitor" },
-            { label: "Riwayat Pengembalian", icon: "solar:card-search-broken", path: "/admin/riwayat" },
-          ].map((item) => {
-            const isActive = item.path === "/admin/verifikasi";
-            return (
-              <button
-                key={item.label}
-                onClick={() => navigate(item.path)}
-                className={`flex items-center gap-4 px-4 py-2 text-left transition-all hover:opacity-80
-                  ${
-                    isActive
-                      ? "bg-gradient-to-r from-[#6A8BB0] to-[#5E5BAD] text-white font-semibold rounded-[15px]"
-                      : "bg-transparent text-[#474646] font-semibold hover:bg-gray-100 rounded-[15px]"
-                  } text-[17px]`}
-                style={isActive ? { boxShadow: "0 2px 8px rgba(90,90,140,0.07)" } : {}}
-              >
-                <span className="flex items-center">
-                  <Icon icon={item.icon} width={32} height={32} />
-                </span>
-                {item.label}
-              </button>
-            );
-          })}
-        </nav>
-      </aside>
+    <aside
+      className="bg-[#E6E6E6] flex flex-col py-8 px-7 border-r border-[#eaeaea] h-screen fixed top-0 left-0 z-20"
+      style={{ width: 360 }}
+    >
+      <img src={kaiLogo} alt="KAI Logo" className="w-[120px] mb-6 mx-auto" />
+
+      <div className="text-[18px] font-poppins font-medium text-[#242424] text-center mb-7 leading-[20px]">
+        Admin Panel Kartu Visitor
+      </div>
+      
+      <div className="w-full flex justify-center mb-12">
+        <div style={{ width: "100%", height: 2, background: "#C4C4C4", borderRadius: 2, margin: "0 auto" }} />
+      </div>
+
+      <nav className="flex flex-col gap-4 mt-2">
+        {[
+          { label: "Dashboard", icon: "streamline-plump:user-pin-remix", path: "/admin/dashboard" },
+          { label: "Verifikasi & Persetujuan", icon: "streamline-sharp:time-lapse-solid", path: "/admin/verifikasi" },
+          { label: "Kartu Visitor", icon: "solar:card-recive-outline", path: "/admin/kartu-visitor" },
+          { label: "Riwayat Pengembalian", icon: "solar:card-search-broken", path: "/admin/riwayat" },
+        ].map((item) => {
+          const isActive = location.pathname === item.path;
+          return (
+            <button
+              key={item.label}
+              onClick={() => navigate(item.path)}
+              className={`flex items-center gap-4 px-4 py-2 text-left transition-all hover:opacity-80
+                ${
+                  isActive
+                    ? "bg-gradient-to-r from-[#6A8BB0] to-[#5E5BAD] text-white font-semibold rounded-[15px]"
+                    : "bg-transparent text-[#474646] font-semibold hover:bg-gray-100 rounded-[15px]"
+                } text-[17px]`}
+              style={isActive ? { boxShadow: "0 2px 8px rgba(90,90,140,0.07)" } : {}}
+            >
+              <span className="flex items-center">
+                <Icon icon={item.icon} width={32} height={32} />
+              </span>
+              {item.label}
+            </button>
+          );
+        })}
+      </nav>
+    </aside>
 
       {/* Main Content */}
       <main
