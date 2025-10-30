@@ -200,7 +200,61 @@ const HasilTolak = () => {
     };
   }, [nomor]);
 
-  if (loading) return <div>Loading...</div>;
+  // === Replace simple "Loading..." with the same spinner used in HasilCek/HasilProses ===
+  if (loading)
+    return (
+      <div className="initial-loading">
+        <div
+          className="initial-loading-inner"
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+        >
+          <div className="spinner" aria-hidden="true" />
+          <div className="spinner-text">Memuat data...</div>
+        </div>
+
+        {/* Inline spinner CSS so we don't need to touch HasilTolak.css */}
+        <style>{`
+          .initial-loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 60vh;
+            width: 100%;
+            padding: 40px 0;
+            box-sizing: border-box;
+          }
+          .initial-loading-inner {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+          }
+          .spinner {
+            width: 48px;
+            height: 48px;
+            border: 6px solid rgba(0,0,0,0.08);
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: hc-spin 1s linear infinite;
+            box-sizing: border-box;
+          }
+          @keyframes hc-spin {
+            to { transform: rotate(360deg); }
+          }
+          .spinner-text {
+            color: #555;
+            font-size: 14px;
+          }
+          @media (max-width: 768px) {
+            .initial-loading { min-height: 40vh; padding: 20px 0; }
+            .spinner { width: 40px; height: 40px; border-width: 5px; }
+          }
+        `}</style>
+      </div>
+    );
+
   if (error) return <div className="text-red-500 p-4">{error}</div>;
   if (!data) return <div>Data kosong.</div>;
 
@@ -217,16 +271,8 @@ const HasilTolak = () => {
   const reason = data.rejection_reason || data.reason || '-';
 
   const goApply = () => {
-    navigate('/apply', {
-      state: {
-        from: 'hasil-tolak',
-        previous_reference: data?.reference_number ?? nomor,
-        full_name: data?.full_name,
-        visit_purpose: data?.visit_purpose,
-        station_name: stationName,
-      },
-      replace: false,
-    });
+    // arahkan ke AttentionPage pada route /apply/attention
+    navigate('/apply/attention', { replace: false });
   };
 
   const btnStyle = {
