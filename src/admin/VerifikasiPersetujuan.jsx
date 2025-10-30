@@ -16,11 +16,9 @@ const statusConfig = {
   Menunggu:   { bg: "#FEF5E7", color: "#D69E2E", label: "Menunggu" },
   Disetujui:  { bg: "#E7FEED", color: "#47D62E", label: "Disetujui" },
   Ditolak:    { bg: "#FFDEDB", color: "#FF0000", label: "Ditolak" },
-  // Style untuk DIBATALKAN agar berbeda (abu-abu):
   Dibatalkan: { bg: "#F2F2F2", color: "#7A7A7A", label: "Dibatalkan" },
 };
 
-// Normalisasi status backend -> ID (menangkap 'cancelled/canceled/dibatalkan')
 function mapStatusID(raw) {
   if (raw === 1 || raw === "1" || String(raw).toLowerCase() === "true") return "Disetujui";
   if (raw === 2 || raw === "2") return "Ditolak";
@@ -35,7 +33,6 @@ function mapStatusID(raw) {
   if (s.includes("reject") || s.includes("declin") || s.includes("ditolak") || s === "tolak")
     return "Ditolak";
 
-  // tangkap bentuk pembatalan apapun
   if (
     s.includes("cancel") || s.includes("canceled") || s.includes("cancelled") ||
     s.includes("batal")  || s.includes("dibatal")
@@ -111,7 +108,6 @@ export default function VerifikasiPersetujuan() {
     return () => clearTimeout(t);
   }, [query]);
 
-  // Ambil SEMUA verifikasi (termasuk DIBATALKAN) — backend sekarang sudah dicari via beberapa endpoint kandidat di api.js
   const fetchList = async () => {
     const reqId = ++lastRequestId.current;
     setLoading(true);
@@ -170,7 +166,6 @@ export default function VerifikasiPersetujuan() {
         };
       });
 
-      // PENTING: TIDAK memfilter “Dibatalkan”. Biarkan ikut tampil di “Semua”.
       list.sort((a, b) => b.sortKey - a.sortKey);
       if (reqId === lastRequestId.current) setRows(list);
     } catch (e) {
@@ -214,13 +209,11 @@ export default function VerifikasiPersetujuan() {
     );
   }, [rows, queryDebounced]);
 
-  // Hanya tiga filter (tanpa “Dibatalkan”). “Dibatalkan” tetap terlihat saat filter “Semua”.
   const filtered = useMemo(() => {
     if (statusFilter === "Semua") return searched;
     return searched.filter((r) => r.status === statusFilter);
   }, [searched, statusFilter]);
 
-  // counter (tidak memasukkan Dibatalkan dalam badge count karena tidak ada tombolnya)
   const pendingCount  = useMemo(() => rows.filter((r) => r.status === "Menunggu").length, [rows]);
   const approvedCount = useMemo(() => rows.filter((r) => r.status === "Disetujui").length, [rows]);
   const rejectedCount = useMemo(() => rows.filter((r) => r.status === "Ditolak").length,   [rows]);
@@ -254,47 +247,49 @@ export default function VerifikasiPersetujuan() {
 
   return (
     <div className="min-h-screen flex bg-[#6A8BB0] font-poppins overflow-x-hidden">
-      {/* Sidebar */}
-      <aside
-        className="bg-[#E6E6E6] flex flex-col py-8 px-7 border-r border-[#eaeaea] h-screen fixed top-0 left-0 z-20"
-        style={{ width: 360 }}
-      >
-        <img src={kaiLogo} alt="KAI Logo" className="w-[120px] mb-6 mx-auto" />
-        <div className="text-[18px] font-poppins font-medium text-[#242424] text-center mb-7 leading-[20px]">
-          Admin Panel Kartu Visitor
-        </div>
-        <div className="w-full flex justify-center mb-12">
-          <div style={{ width: "100%", height: 2, background: "#C4C4C4", borderRadius: 2, margin: "0 auto" }} />
-        </div>
+    <aside
+      className="bg-[#E6E6E6] flex flex-col py-8 px-7 border-r border-[#eaeaea] h-screen fixed top-0 left-0 z-20"
+      style={{ width: 360 }}
+    >
+      <img src={kaiLogo} alt="KAI Logo" className="w-[120px] mb-6 mx-auto" />
 
-        <nav className="flex flex-col gap-4 mt-2">
-          {[
-            { label: "Dashboard", icon: "streamline-plump:user-pin-remix",   path: "/admin/dashboard" },
-            { label: "Verifikasi & Persetujuan", icon: "streamline-sharp:time-lapse-solid", path: "/admin/verifikasi" },
-            { label: "Kartu Visitor", icon: "solar:card-recive-outline",     path: "/admin/kartu-visitor" },
-            { label: "Riwayat Pengembalian", icon: "solar:card-search-broken", path: "/admin/riwayat" },
-          ].map((item) => {
-            const isActive = location.pathname === item.path;
-            return (
-              <button
-                key={item.label}
-                onClick={() => handleMenuClick(item.path)}
-                className={`flex items-center gap-4 px-4 py-2 text-left transition-all hover:opacity-80
-                  ${isActive
+      <div className="text-[18px] font-poppins font-medium text-[#242424] text-center mb-7 leading-[20px]">
+        Admin Panel Kartu Visitor
+      </div>
+      
+      <div className="w-full flex justify-center mb-12">
+        <div style={{ width: "100%", height: 2, background: "#C4C4C4", borderRadius: 2, margin: "0 auto" }} />
+      </div>
+
+      <nav className="flex flex-col gap-4 mt-2">
+        {[
+          { label: "Dashboard", icon: "streamline-plump:user-pin-remix", path: "/admin/dashboard" },
+          { label: "Verifikasi & Persetujuan", icon: "streamline-sharp:time-lapse-solid", path: "/admin/verifikasi" },
+          { label: "Kartu Visitor", icon: "solar:card-recive-outline", path: "/admin/kartu-visitor" },
+          { label: "Riwayat Pengembalian", icon: "solar:card-search-broken", path: "/admin/riwayat" },
+        ].map((item) => {
+          const isActive = location.pathname === item.path;
+          return (
+            <button
+              key={item.label}
+              onClick={() => navigate(item.path)}
+              className={`flex items-center gap-4 px-4 py-2 text-left transition-all hover:opacity-80
+                ${
+                  isActive
                     ? "bg-gradient-to-r from-[#6A8BB0] to-[#5E5BAD] text-white font-semibold rounded-[15px]"
                     : "bg-transparent text-[#474646] font-semibold hover:bg-gray-100 rounded-[15px]"
-                  } text-[17px]`}
-                style={isActive ? { boxShadow: "0 2px 8px rgba(90,90,140,0.07)" } : {}}
-              >
-                <span className="flex items-center">
-                  <Icon icon={item.icon} width={32} height={32} />
-                </span>
-                {item.label}
-              </button>
-            );
-          })}
-        </nav>
-      </aside>
+                } text-[17px]`}
+              style={isActive ? { boxShadow: "0 2px 8px rgba(90,90,140,0.07)" } : {}}
+            >
+              <span className="flex items-center">
+                <Icon icon={item.icon} width={32} height={32} />
+              </span>
+              {item.label}
+            </button>
+          );
+        })}
+      </nav>
+    </aside>
 
       {/* Main Content */}
       <main

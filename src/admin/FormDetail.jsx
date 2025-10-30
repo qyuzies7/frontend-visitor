@@ -17,6 +17,7 @@ function normalizeStatusLabel(s) {
   const v = (s || "").toString().toLowerCase();
   if (v === "approved" || v === "disetujui") return "Disetujui";
   if (v === "rejected" || v === "ditolak") return "Ditolak";
+  if (v === "cancelled" || v === "canceled" || v === "dibatalkan" || v.includes("batal")) return "Dibatalkan";
   return "Menunggu";
 }
 
@@ -69,6 +70,7 @@ const ASSISTANCE_LABELS = {
   "vip_plus_pendampingan_protokoler": "Ruang VIP + pendampingan protokoler",
   "akses_pintu_plus_pendampingan_protokoler": "Akses pintu + pendampingan protokoler",
 };
+
 function prettyAssistanceLabel(raw) {
   if (!raw) return "-";
   const v = String(raw).trim();
@@ -269,7 +271,6 @@ export default function FormDetail() {
 
         if (!mounted) return;
         setDetail({
-          // data diri
           nama,
           instansi,
           email,
@@ -374,6 +375,16 @@ export default function FormDetail() {
         </span>
       );
     }
+    if (detail.statusLabel === "Dibatalkan") {
+      return (
+        <span
+          className="flex items-center px-4 py-2 font-poppins font-semibold text-[16px]"
+          style={{ color: "#6B7280", background: "#F3F4F6", borderRadius: 10, fontWeight: 600 }}
+        >
+          Dibatalkan
+        </span>
+      );
+    }
     return null;
   };
 
@@ -439,9 +450,11 @@ export default function FormDetail() {
     }
   };
 
-  // Tombol aksi bawah
+  // ✅ BAGIAN INI YANG DIPERBAIKI - Tombol aksi bawah
   let actionSection;
+  
   if (detail.statusLabel === "Menunggu") {
+    // ✅ Status "Menunggu" → 3 tombol: Kembali, Tolak, Setuju
     actionSection = (
       <div className="flex gap-4 justify-end">
         <button
@@ -467,38 +480,88 @@ export default function FormDetail() {
         </button>
       </div>
     );
-  } else if (detail.statusLabel === "Ditolak") {
+  } 
+  else if (detail.statusLabel === "Ditolak") {
+    // ✅ Status "Ditolak" → Catatan + Petugas + Kembali (SEBARIS!)
     actionSection = (
-      <div className="flex gap-4 items-center">
-        <div
-          className="font-poppins font-semibold px-5 py-2 rounded-[8px]"
-          style={{ color: "#FF0004", background: "#FFDEDB", fontSize: 15, borderRadius: 8, marginRight: 10, minWidth: 0, maxWidth: 320, overflowWrap: "break-word" }}
-        >
-          {detail.catatan || "-"}
+      <div className="flex gap-4 items-center justify-between">
+        {/* Bagian kiri: Catatan + Petugas */}
+        <div className="flex gap-4 items-center">
+          <div
+            className="font-poppins font-semibold px-5 py-2 rounded-[8px]"
+            style={{ 
+              color: "#FF0004", 
+              background: "#FFDEDB", 
+              fontSize: 15, 
+              borderRadius: 8, 
+              minWidth: 0, 
+              maxWidth: 320, 
+              overflowWrap: "break-word" 
+            }}
+          >
+            {detail.catatan || "-"}
+          </div>
+          <div
+            className="font-poppins font-medium px-5 py-2 rounded-[8px]"
+            style={{ background: "#E3E3E3", color: "#242424", fontSize: 15, borderRadius: 8 }}
+          >
+            Petugas : {adminNameFromLS}
+          </div>
         </div>
-        <div
-          className="font-poppins font-medium px-5 py-2 rounded-[8px]"
-          style={{ background: "#E3E3E3", color: "#242424", fontSize: 15, borderRadius: 8 }}
+        
+        {/* Bagian kanan: Tombol Kembali */}
+        <button
+          className="px-8 py-2 text-white font-poppins font-semibold rounded-[7px]"
+          style={{ background: "linear-gradient(90deg, #6A8BB0 0%, #5E5BAD 100%)", fontWeight: 600, fontSize: 16 }}
+          onClick={() => navigate("/admin/verifikasi")}
         >
-          Petugas : {adminNameFromLS}
-        </div>
+          Kembali
+        </button>
       </div>
     );
-  } else if (detail.statusLabel === "Disetujui") {
+  } 
+  else if (detail.statusLabel === "Disetujui") {
+    // ✅ Status "Disetujui" → Catatan + Petugas + Kembali (SEBARIS!)
     actionSection = (
-      <div className="flex gap-4 items-center">
-        <div
-          className="font-poppins font-medium px-5 py-2 rounded-[8px]"
-          style={{ background: "#E3E3E3", color: "#242424", fontSize: 15, borderRadius: 8 }}
-        >
-          Catatan : {detail.catatan || "-"}
+      <div className="flex gap-4 items-center justify-between">
+        {/* Bagian kiri: Catatan + Petugas */}
+        <div className="flex gap-4 items-center">
+          <div
+            className="font-poppins font-medium px-5 py-2 rounded-[8px]"
+            style={{ background: "#E3E3E3", color: "#242424", fontSize: 15, borderRadius: 8 }}
+          >
+            Catatan : {detail.catatan || "-"}
+          </div>
+          <div
+            className="font-poppins font-medium px-5 py-2 rounded-[8px]"
+            style={{ background: "#E3E3E3", color: "#242424", fontSize: 15, borderRadius: 8 }}
+          >
+            Petugas : {adminNameFromLS}
+          </div>
         </div>
-        <div
-          className="font-poppins font-medium px-5 py-2 rounded-[8px]"
-          style={{ background: "#E3E3E3", color: "#242424", fontSize: 15, borderRadius: 8 }}
+        
+        {/* Bagian kanan: Tombol Kembali */}
+        <button
+          className="px-8 py-2 text-white font-poppins font-semibold rounded-[7px]"
+          style={{ background: "linear-gradient(90deg, #6A8BB0 0%, #5E5BAD 100%)", fontWeight: 600, fontSize: 16 }}
+          onClick={() => navigate("/admin/verifikasi")}
         >
-          Petugas : {adminNameFromLS}
-        </div>
+          Kembali
+        </button>
+      </div>
+    );
+  }
+  else {
+    // ✅ Status lain (misal "Dibatalkan") → Cuma tombol Kembali di kanan bawah
+    actionSection = (
+      <div className="flex justify-end">
+        <button
+          className="px-8 py-2 text-white font-poppins font-semibold rounded-[7px]"
+          style={{ background: "linear-gradient(90deg, #6A8BB0 0%, #5E5BAD 100%)", fontWeight: 600, fontSize: 16 }}
+          onClick={() => navigate("/admin/verifikasi")}
+        >
+          Kembali
+        </button>
       </div>
     );
   }
@@ -506,46 +569,49 @@ export default function FormDetail() {
   return (
     <div className="min-h-screen flex bg-[#6A8BB0] font-poppins">
       {/* Sidebar */}
-      <aside
-        className="bg-[#E6E6E6] flex flex-col py-8 px-7 border-r border-[#eaeaea] h-screen fixed top-0 left-0 z-20"
-        style={{ width: 360 }}
-      >
-        <img src={kaiLogo} alt="KAI Logo" className="w-[120px] mb-6 mx-auto" />
-        <div className="text-[18px] font-poppins font-medium text-[#242424] text-center mb-7 leading-[20px]">
-          Admin Panel Kartu Visitor
-        </div>
-        <div className="w-full flex justify-center mb-12">
-          <div style={{ width: "100%", height: 2, background: "#C4C4C4", borderRadius: 2, margin: "0 auto" }} />
-        </div>
-        <nav className="flex flex-col gap-4 mt-2">
-          {[
-            { label: "Dashboard", icon: "streamline-plump:user-pin-remix", path: "/admin/dashboard" },
-            { label: "Verifikasi & Persetujuan", icon: "streamline-sharp:time-lapse-solid", path: "/admin/verifikasi" },
-            { label: "Kartu Visitor", icon: "solar:card-recive-outline", path: "/admin/kartu-visitor" },
-            { label: "Riwayat Pengembalian", icon: "solar:card-search-broken", path: "/admin/riwayat" },
-          ].map((item) => {
-            const isActive = item.path === "/admin/verifikasi";
-            return (
-              <button
-                key={item.label}
-                onClick={() => navigate(item.path)}
-                className={`flex items-center gap-4 px-4 py-2 text-left transition-all hover:opacity-80
-                  ${
-                    isActive
-                      ? "bg-gradient-to-r from-[#6A8BB0] to-[#5E5BAD] text-white font-semibold rounded-[15px]"
-                      : "bg-transparent text-[#474646] font-semibold hover:bg-gray-100 rounded-[15px]"
-                  } text-[17px]`}
-                style={isActive ? { boxShadow: "0 2px 8px rgba(90,90,140,0.07)" } : {}}
-              >
-                <span className="flex items-center">
-                  <Icon icon={item.icon} width={32} height={32} />
-                </span>
-                {item.label}
-              </button>
-            );
-          })}
-        </nav>
-      </aside>
+    <aside
+      className="bg-[#E6E6E6] flex flex-col py-8 px-7 border-r border-[#eaeaea] h-screen fixed top-0 left-0 z-20"
+      style={{ width: 360 }}
+    >
+      <img src={kaiLogo} alt="KAI Logo" className="w-[120px] mb-6 mx-auto" />
+
+      <div className="text-[18px] font-poppins font-medium text-[#242424] text-center mb-7 leading-[20px]">
+        Admin Panel Kartu Visitor
+      </div>
+      
+      <div className="w-full flex justify-center mb-12">
+        <div style={{ width: "100%", height: 2, background: "#C4C4C4", borderRadius: 2, margin: "0 auto" }} />
+      </div>
+
+      <nav className="flex flex-col gap-4 mt-2">
+        {[
+          { label: "Dashboard", icon: "streamline-plump:user-pin-remix", path: "/admin/dashboard" },
+          { label: "Verifikasi & Persetujuan", icon: "streamline-sharp:time-lapse-solid", path: "/admin/verifikasi" },
+          { label: "Kartu Visitor", icon: "solar:card-recive-outline", path: "/admin/kartu-visitor" },
+          { label: "Riwayat Pengembalian", icon: "solar:card-search-broken", path: "/admin/riwayat" },
+        ].map((item) => {
+          const isActive = location.pathname === item.path;
+          return (
+            <button
+              key={item.label}
+              onClick={() => navigate(item.path)}
+              className={`flex items-center gap-4 px-4 py-2 text-left transition-all hover:opacity-80
+                ${
+                  isActive
+                    ? "bg-gradient-to-r from-[#6A8BB0] to-[#5E5BAD] text-white font-semibold rounded-[15px]"
+                    : "bg-transparent text-[#474646] font-semibold hover:bg-gray-100 rounded-[15px]"
+                } text-[17px]`}
+              style={isActive ? { boxShadow: "0 2px 8px rgba(90,90,140,0.07)" } : {}}
+            >
+              <span className="flex items-center">
+                <Icon icon={item.icon} width={32} height={32} />
+              </span>
+              {item.label}
+            </button>
+          );
+        })}
+      </nav>
+    </aside>
 
       {/* Main Content */}
       <main
@@ -681,6 +747,7 @@ export default function FormDetail() {
 
             <div style={{ width: "100%", height: 2, background: "#E3E3E3", borderRadius: 2, margin: "18px 0 15px 0" }} />
 
+            {/* ✅ Tampilkan tombol aksi sesuai status */}
             {actionSection}
 
             <SmallModal
@@ -734,7 +801,6 @@ export default function FormDetail() {
               </form>
             </SmallModal>
 
-            {/* Popup Setuju */}
             <SmallModal
               open={showAccept}
               onClose={() => setShowAccept(false)}
