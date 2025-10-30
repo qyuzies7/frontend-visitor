@@ -188,6 +188,7 @@ export default function Dashboard() {
     }
   };
 
+  // ✅ FUNGSI INI YANG DIPERBAIKI!
   const loadStats = async ({ initial = false } = {}) => {
     const reqId = ++lastRequestId.current;
 
@@ -199,16 +200,21 @@ export default function Dashboard() {
     }
 
     try {
+      // ✅ PERBAIKAN 1: Ganti nama variabel jadi lebih jelas
       const [
         activeCardsRes,
         verificationsRes,
-        inTodayRes,
-        outTodayRes,
+        issuedTodayRes,      // ✅ KELUAR (issued = diserahkan)
+        returnedTodayRes,    // ✅ MASUK (returned = dikembalikan)
+        damagedRes,
+        lostRes,
       ] = await Promise.all([
         getActiveCards(),       
         getVerificationsAll(),  
-        getTodayIssued(),
-        getTodayReturned(),
+        getTodayIssued(),      // ✅ API untuk kartu KELUAR
+        getTodayReturned(),    // ✅ API untuk kartu MASUK
+        getDamagedCards({ ttl: 0 }),
+        getLostCards({ ttl: 0 }),
       ]);
 
       if (reqId !== lastRequestId.current) return;
@@ -227,23 +233,43 @@ export default function Dashboard() {
         totalPending = verificationsRes.data.total;
       }
 
+      const baseDamaged = parseFlexibleTotal(damagedRes);
+      const baseLost = parseFlexibleTotal(lostRes);
+
       const activeDamaged = activeArr.filter(isDamaged).length;
       const activeLost = activeArr.filter(isLost).length;
 
-      const damagedTotal = activeDamaged;
-      const lostTotal = activeLost;
+      const damagedTotal = Math.max(baseDamaged, baseDamaged + activeDamaged);
+      const lostTotal = Math.max(baseLost, baseLost + activeLost);
 
+      // ✅ PERBAIKAN 2: Parse dengan benar
+      const keluarCount = parseFlexibleTotal(issuedTodayRes);    // ✅ issued = KELUAR
+      const masukCount = parseFlexibleTotal(returnedTodayRes);   // ✅ returned = MASUK
+
+      // ✅ PERBAIKAN 3: Set stats dengan mapping yang BENAR
       setStats({
         aktif: totalAktif,
         verifikasi: totalPending,
-        masukHariIni: parseFlexibleTotal(inTodayRes),
-        keluarHariIni: parseFlexibleTotal(outTodayRes),
+        masukHariIni: masukCount,      // ✅ MASUK = returned
+        keluarHariIni: keluarCount,    // ✅ KELUAR = issued
         rusak: damagedTotal,
         hilang: lostTotal,
       });
+
+      // ✅ Log untuk debugging (hapus nanti kalau sudah OK)
+      console.log("📊 Dashboard Stats Updated:", {
+        aktif: totalAktif,
+        verifikasi: totalPending,
+        masukHariIni: masukCount,
+        keluarHariIni: keluarCount,
+        rusak: damagedTotal,
+        hilang: lostTotal,
+      });
+
       setErr("");
     } catch (e) {
       const msg = e?.response?.data?.message || e?.message || "Gagal memuat dashboard";
+      console.error("❌ Error loading dashboard:", e);
       setErr(msg);
     } finally {
       if (reqId === lastRequestId.current) {
@@ -259,10 +285,33 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
+    if (firstLoad === false) {
+      try {
+        const raw = localStorage.getItem("dashboard:pendingIncrements");
+        if (raw) {
+          const map = JSON.parse(raw || "{}");
+          const keys = Object.keys(map || {});
+          if (keys.length) {
+            setStats((prev) => {
+              const next = { ...(prev || {}) };
+              for (const k of keys) {
+                next[k] = Math.max(0, (next[k] || 0) + Number(map[k] || 0));
+              }
+              return next;
+            });
+            try { localStorage.removeItem("dashboard:pendingIncrements"); } catch (_) {}
+          }
+        }
+      } catch (_) {}
+    }
+  }, [firstLoad]);
+
+  useEffect(() => {
     const onFocus = () => debouncedRefresh({ initial: false }, 100);
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
   }, []);
+
   useEffect(() => {
     const onVisibility = () => {
       if (!document.hidden) debouncedRefresh({ initial: false }, 100);
@@ -295,6 +344,7 @@ export default function Dashboard() {
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
   }, []);
+
   useEffect(() => {
     let ch = null;
     try {
@@ -311,9 +361,14 @@ export default function Dashboard() {
     return () => { try { if (ch) ch.close(); } catch {} };
   }, []);
 
+  // ✅ Event listener untuk increment manual dari KartuVisitor
   useEffect(() => {
     const onBump = (e) => {
       const { field, delta = 1 } = e.detail || {};
+      
+      // ✅ Log untuk debugging
+      console.log("🚀 Dashboard menerima increment:", { field, delta });
+      
       if (!field) return;
       setStats((prev) => ({
         ...prev,
@@ -324,7 +379,6 @@ export default function Dashboard() {
     return () => window.removeEventListener("dashboard:increment", onBump);
   }, []);
 
-  // Reset harian 
   useEffect(() => {
     let lastDay = new Date().toDateString();
     const tick = () => {
@@ -346,7 +400,6 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen flex bg-[#6A8BB0] font-poppins">
-      {/* Sidebar */}
       <aside
         className="bg-[#E6E6E6] flex flex-col py-8 px-7 border-r border-[#eaeaea] h-screen fixed top-0 left-0 z-20"
         style={{ width: 360 }}
@@ -389,7 +442,6 @@ export default function Dashboard() {
         </nav>
       </aside>
 
-      {/* Main Content */}
       <main
         className="flex-1 flex flex-col px-2 md:px-12 py-10 transition-all"
         style={{ marginLeft: 360, minHeight: "100vh", width: "100%" }}
@@ -403,7 +455,6 @@ export default function Dashboard() {
               Dashboard
             </span>
 
-            {/* Profile */}
             <div className="relative ml-auto" style={{ minWidth: 200 }} ref={dropdownRef}>
               <div
                 className="absolute top-0 left-0 w-full h-full"

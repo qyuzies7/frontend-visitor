@@ -132,7 +132,6 @@ export function filenameFromHeaders(resp, fallback = "dokumen") {
   return fallback;
 }
 
-//public 
 export async function getVisitTypeMap() {
   const res = await getVisitTypes();
   const arr = Array.isArray(res?.data) ? res.data : res?.data?.data || [];
@@ -167,7 +166,6 @@ export async function cancelApplication(payload = {}) {
 export const resubmitApplication = (data) =>
   http.post(`/public/resubmit-application`, data);
 
-// admin
 export const adminLogin = (data) => http.post(`/admin/login`, data);
 export const adminLogout = () => http.post(`/admin/logout`);
 export const getAdminMe = () => http.get(`/admin/me`);
@@ -256,8 +254,6 @@ const _pushUnique = (bucket, seen, items) => {
 
 
 export const getVerificationsAll = async (extraParams = {}) => {
-  // Quick path: try the main combined endpoint first — if backend supports it,
-  // this avoids firing many alternative endpoints and speeds up clients.
   try {
     const mainRes = await cachedGet(`/admin/verification`, { params: extraParams, ttl: 60000 });
     const mainList = Array.isArray(mainRes?.data) ? mainRes.data : mainRes?.data?.data || [];
@@ -324,6 +320,8 @@ export const getReturnedCards = (opts = {}) => {
 export const issueCard = (data) => http.post(`/admin/cards/issue`, data);
 export const returnCard = (data) => http.post(`/admin/cards/return`, data);
 export const editCardCondition = (id, data) => http.put(`/admin/cards/${id}/condition`, data);
+export const reportDamagedCard = (data) => http.post(`/admin/cards/report-damaged`, data);
+export const reportLostCard = (data) => http.post(`/admin/cards/report-lost`, data);
 export const updateVisitorCard = (id, data) => http.put(`/admin/visitor-cards/${id}`, data);
 
 const blobOpts = { responseType: "blob" };

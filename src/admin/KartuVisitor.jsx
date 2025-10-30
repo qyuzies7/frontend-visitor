@@ -9,6 +9,8 @@ import {
   issueCard,
   returnCard,
   editCardCondition,
+  reportDamagedCard,
+  reportLostCard,
   exportDailyFlow,
   downloadBlob,
   adminLogout,
@@ -31,7 +33,6 @@ function notifyDirtyCards() {
     }
   } catch (_) {}
 }
-
 
 const PATCH_KEY = "riwayat:patches";
 
@@ -59,7 +60,6 @@ function broadcastRiwayatPatch(reference, kondisi) {
     }
   } catch {}
 }
-
 
 const IDMAP_KEY = "cards:lastIssuedIDs";
 function loadIdMap() {
@@ -194,7 +194,6 @@ function cacheMeta(rowOrKey, meta) {
   };
   saveMetaCache(cache);
 }
-
 
 async function resolveVisitorCardIdFromActives(hints = {}) {
   const { transactionId, refNo, cardNo } = hints;
@@ -493,8 +492,6 @@ export default function KartuVisitor() {
   async function reloadData(opts = {}) {
     setLoading(true);
     try {
-      // anti-cache for callers that explicitly request it: opts.ttl === 0
-      // default to cached reads to make initial load faster
       const ttl = opts.ttl ?? 60000;
       const [approvedRes, activeRes] = await Promise.all([
         getApprovedCards({ ttl }),
@@ -789,7 +786,6 @@ export default function KartuVisitor() {
       saveRiwayatPatch(referenceForPatch, normalized);
       broadcastRiwayatPatch(referenceForPatch, normalized);
 
-
       window.dispatchEvent(
         new CustomEvent("dashboard:changed", { detail: { type: "returned" } })
       );
@@ -868,13 +864,31 @@ export default function KartuVisitor() {
     const row = pickRowByKey(selectedKey);
     if (!row) return;
 
-    let transactionId = row.transactionId || null;
-    const visitorCardId = findVisitorCardId(row);
+    // Cari visitor_card_id
+    let visitorCardId = findVisitorCardId(row);
     const refNo = row.referenceNumber || row.nomorPengajuan || null;
 
-    if (!transactionId && !visitorCardId && !refNo) {
+    if (!visitorCardId && refNo) {
+      const idFromMap = getIdsForReference(refNo);
+      visitorCardId = idFromMap?.visitor_card_id || null;
+    }
+
+    if (!visitorCardId && refNo) {
+      try {
+        visitorCardId = await resolveVisitorCardIdFromActives({
+          refNo: refNo,
+          transactionId: row.transactionId,
+        });
+      } catch (e) {
+        console.warn("Gagal resolve visitor_card_id:", e);
+      }
+    }
+
+    if (!visitorCardId) {
       alert(
-        "Tidak dapat menemukan ID untuk memperbarui kondisi. Pastikan kartu sudah diserahkan atau ada reference number."
+        "Tidak dapat menemukan ID kartu visitor.\n\n" +
+        "Pastikan kartu sudah DISERAHKAN terlebih dahulu sebelum melaporkan kondisi.\n\n" +
+        "Jika masalah berlanjut, hubungi administrator."
       );
       return;
     }
@@ -882,78 +896,36 @@ export default function KartuVisitor() {
     try {
       setSubmittingLaporan(true);
 
-      if (!transactionId) {
-        try {
-          const issuePayload = {
-            performed_by_name: namaPetugas,
-            card_condition: mapConditionToAPI(laporanKondisi || "Baik"),
-            condition: mapConditionToAPI(laporanKondisi || "Baik"),
-          };
-          if (visitorCardId) issuePayload.visitor_card_id = visitorCardId;
-          if (refNo) issuePayload.reference_number = refNo;
-
-          const issueResp = await issueCard(issuePayload);
-          const tx = issueResp?.data?.data || issueResp?.data || {};
-          transactionId =
-            tx.card_transaction_id ||
-            tx.transaction_id ||
-            tx.id ||
-            tx?.transaction?.id ||
-            null;
-
-          const newVisitorCardId =
-            tx.visitor_card_id || tx.card_id || tx.card?.id || tx.visitor_card?.id || null;
-
-          setIdsForReference(refNo, {
-            visitor_card_id: newVisitorCardId || null,
-            transaction_id: transactionId || null,
-          });
-
-          setDummyData((prev) =>
-            prev.map((r) =>
-              String(rowKey(r)) === String(selectedKey)
-                ? {
-                    ...r,
-                    transactionId: transactionId || r.transactionId,
-                    visitorCardId: newVisitorCardId || r.visitorCardId,
-                    aksi: "Serahkan Kartu",
-                    isActive: true,
-                    petugasSerah: namaPetugas,
-                    petugasPenyerah: namaPetugas,
-                    petugas_serah: namaPetugas,
-                    tanggalPinjam:
-                      r.tanggalPinjam || new Date().toISOString().slice(0, 10),
-                    kondisi: laporanKondisi || r.kondisi || "Baik",
-                  }
-                : r
-            )
-          );
-        } catch (issueErr) {
-          console.warn("Auto-issue gagal:", issueErr);
-          alert(
-            "Gagal membuat transaksi kartu. Harap lakukan penyerahan kartu terlebih dahulu sebelum melaporkan kondisi."
-          );
-          return;
-        }
-      }
-
-      if (!transactionId) {
-        alert(
-          "Transaction ID tidak ditemukan setelah percobaan. Pembaruan kondisi dibatalkan."
-        );
-        return;
-      }
-
       const payload = {
-        card_transaction_id: transactionId,
-        card_condition: mapConditionToAPI(laporanKondisi),
-        condition: mapConditionToAPI(laporanKondisi),
-        reason: laporanAlasan,
-        handling: laporanPenanganan,
+        visitor_card_id: visitorCardId,
+        notes: `${laporanAlasan}\n\nPenanganan: ${laporanPenanganan}`,
       };
 
-      await editCardCondition(transactionId, payload);
+      const normalized = normalizeConditionLabel(laporanKondisi);
+      
+      // Panggil API
+      if (normalized === "Rusak") {
+        await reportDamagedCard(payload);
+        
+        window.dispatchEvent(
+          new CustomEvent("dashboard:changed", { detail: { type: "damaged" } })
+        );
+        window.dispatchEvent(
+          new CustomEvent("dashboard:increment", { detail: { field: "rusak", delta: 1 } })
+        );
+        
+      } else if (normalized === "Hilang") {
+        await reportLostCard(payload);
+        
+        window.dispatchEvent(
+          new CustomEvent("dashboard:changed", { detail: { type: "lost" } })
+        );
+        window.dispatchEvent(
+          new CustomEvent("dashboard:increment", { detail: { field: "hilang", delta: 1 } })
+        );
+      }
 
+      // ✅ PERBAIKAN: Update data LANGSUNG tanpa reload dari server
       const cacheKey = keyForRow(row);
       cacheMeta(cacheKey, {
         kondisi: laporanKondisi,
@@ -962,62 +934,45 @@ export default function KartuVisitor() {
       });
 
       const refForPatch = refNo || row?.nomorPengajuan || row?.referenceNumber;
-      const normalized = normalizeConditionLabel(laporanKondisi);
       saveRiwayatPatch(refForPatch, normalized);
       broadcastRiwayatPatch(refForPatch, normalized);
-      // --------------------------------------------------
 
+      // ✅ Update tampilan LANGSUNG (tidak tunggu server)
       setDummyData((prev) =>
         prev.map((r) =>
           String(rowKey(r)) === String(selectedKey)
-            ? {
-                ...r,
-                kondisi: laporanKondisi,
-                alasan: laporanAlasan,
+            ? { 
+                ...r, 
+                kondisi: laporanKondisi, 
+                alasan: laporanAlasan, 
                 penanganan: laporanPenanganan,
+                visitorCardId: visitorCardId
               }
             : r
         )
       );
-
-      try {
+      if (normalized === "Baik") {
         await reloadData({ ttl: 0 });
-      } catch (_err) {}
-
+      }
+      
       setShowPopup(false);
-
-      try {
-        if (normalized === "Hilang") {
-          window.dispatchEvent(
-            new CustomEvent("dashboard:changed", { detail: { type: "lost" } })
-          );
-          window.dispatchEvent(
-            new CustomEvent("dashboard:increment", {
-              detail: { field: "hilang", delta: 1 },
-            })
-          );
-        } else if (normalized === "Rusak") {
-          window.dispatchEvent(
-            new CustomEvent("dashboard:changed", { detail: { type: "damaged" } })
-          );
-          window.dispatchEvent(
-            new CustomEvent("dashboard:increment", {
-              detail: { field: "rusak", delta: 1 },
-            })
-          );
-        } else {
-          window.dispatchEvent(
-            new CustomEvent("dashboard:changed", {
-              detail: { type: "condition-updated" },
-            })
-          );
-        }
-
-        notifyDirtyCards();
-        window.dispatchEvent(new CustomEvent("riwayat:refresh"));
-      } catch {}
+      alert("Laporan berhasil disimpan!");
+      
     } catch (e) {
-      alert(e?.response?.data?.message || "Gagal menyimpan laporan kondisi.");
+      const errorMsg = e?.response?.data?.message || e?.message || "Gagal menyimpan laporan kondisi.";
+      console.error("Error saat menyimpan laporan:", e);
+  
+      if (errorMsg.includes("visitor card id")) {
+        alert(
+          "Gagal menyimpan laporan: ID kartu visitor tidak ditemukan.\n\n" +
+          "Kemungkinan penyebab:\n" +
+          "1. Kartu belum diserahkan ke pengunjung\n" +
+          "2. Data kartu belum tersimpan di database\n\n" +
+          "Silakan serahkan kartu terlebih dahulu, lalu coba lagi."
+        );
+      } else {
+        alert(errorMsg);
+      }
     } finally {
       setSubmittingLaporan(false);
     }
@@ -1027,7 +982,6 @@ export default function KartuVisitor() {
 
   return (
     <div className="min-h-screen flex bg-[#6A8BB0] font-poppins">
-      {/* Sidebar */}
       <aside
         className="bg-[#E6E6E6] flex flex-col py-8 px-7 border-r border-[#eaeaea] h-screen fixed top-0 left-0 z-20"
         style={{ width: 360 }}
@@ -1094,7 +1048,6 @@ export default function KartuVisitor() {
         </nav>
       </aside>
 
-      {/* Main Content */}
       <main
         className="flex-1 flex flex-col px-2 md:px-12 py-10 transition-all"
         style={{ marginLeft: 360, minHeight: "100vh", width: "100%" }}
@@ -1148,7 +1101,6 @@ export default function KartuVisitor() {
           </div>
         </div>
 
-        {/* Content Area */}
         <div className="w-full max-w-[900px] mx-auto">
           <div className="bg-white rounded-[20px] shadow-md px-0 py-0">
             <div className="flex items-center justify-between px-8 pt-8 pb-3">
@@ -1168,7 +1120,6 @@ export default function KartuVisitor() {
               </button>
             </div>
 
-            {/* Table */}
             <div className="overflow-x-auto pb-8">
               <table className="w-full min-w-[730px]">
                 <thead>
@@ -1346,7 +1297,6 @@ export default function KartuVisitor() {
           </div>
         </div>
 
-        {/* Popups */}
         <Popup
           show={showPopup && popupType === "serah"}
           title="Konfirmasi Penyerahan Kartu Visitor"
@@ -1532,7 +1482,7 @@ export default function KartuVisitor() {
                 onChange={(e) => setLaporanAlasan(e.target.value)}
                 disabled={readonlyLaporan}
               />
-              <div
+                            <div
                 className="mb-2 font-poppins font-medium"
                 style={{ color: "#474646" }}
               >
