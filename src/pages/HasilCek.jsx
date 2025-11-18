@@ -180,7 +180,7 @@ const HasilCek = () => {
           aria-busy="true"
         >
           <div className="spinner" aria-hidden="true" />
-          <div className="spinner-text">Memuat data...</div>
+          <div className="spinner-text">Loading...</div>
         </div>
       </div>
     );

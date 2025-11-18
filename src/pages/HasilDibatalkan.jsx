@@ -192,7 +192,7 @@ const HasilDibatalkan = () => {
           aria-busy="true"
         >
           <div className="spinner" aria-hidden="true" />
-          <div className="spinner-text">Memuat data...</div>
+          <div className="spinner-text">Loading...</div>
         </div>
 
         {/* Inline spinner CSS to ensure this component has the same spinner without requiring edits to HasilTolak.css */}
