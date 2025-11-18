@@ -425,7 +425,7 @@ const HasilProses = () => {
           </div>
             <div className="info-item">
             <span className="info-label">Jumlah Pendampingan Protokoler</span>
-            <span className="info-value">{data?.need_protokoler_escort || '-'}</span>
+            <span className="info-value">{data?.protokoler_count ?? '-'}</span>
           </div>
           </div>
         </div>
