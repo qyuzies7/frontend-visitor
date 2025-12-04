@@ -441,10 +441,16 @@ const HasilProses = () => {
         </div>
         
         <div className="button-group-tolak">
-          <button className="re-apply-button-tolak" type="button">
+          <a
+            className="re-apply-button-tolak"
+            href="https://wa.me/6287838440009"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Hubungi Keamanan via WhatsApp"
+          >
             <img src={CallIcon} alt="Hubungi Keamanan" className="reapply-icon-tolak" />
             Hubungi Keamanan
-          </button>
+          </a>
 
           <button
             className="contact-button-tolak"
