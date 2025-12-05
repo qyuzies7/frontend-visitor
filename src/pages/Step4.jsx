@@ -42,10 +42,8 @@ const Step4 = ({ formData, prevStep, nextStep }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // localData used as fallback when parent formData is empty (e.g. after refresh)
   const [localData, setLocalData] = useState(formData || {});
 
-  // Load saved formData from sessionStorage on mount to be robust on refresh
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem(STORAGE_KEY_FORMDATA);
@@ -60,12 +58,10 @@ const Step4 = ({ formData, prevStep, nextStep }) => {
         }
       }
     } catch {
-      // ignore
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // keep localData in sync when parent formData changes
+
   useEffect(() => {
     if (formData && Object.keys(formData || {}).length > 0) {
       setLocalData(formData);
@@ -83,7 +79,6 @@ const Step4 = ({ formData, prevStep, nextStep }) => {
     setError('');
 
     try {
-      // prefer parent formData; fallback to localData (from sessionStorage)
       const dataSource = formData && Object.keys(formData || {}).length ? formData : localData;
 
       const needEscort =
@@ -133,7 +128,6 @@ const Step4 = ({ formData, prevStep, nextStep }) => {
       }
 
       let response;
-      // If document is a real File, send FormData; otherwise send JSON (no actual file)
       if (payload.document instanceof File) {
         const fd = new FormData();
         Object.entries(payload).forEach(([k, v]) => {

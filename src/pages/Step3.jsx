@@ -8,6 +8,7 @@ const Step3 = ({ formData, setFormData, nextStep, prevStep }) => {
   const [errors, setErrors] = useState({});
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState(null);
 
   const maxFileSize = 10 * 1024 * 1024; // 10MB
 
@@ -65,6 +66,59 @@ const Step3 = ({ formData, setFormData, nextStep, prevStep }) => {
     }
   }, [formData?.document, formData?.documentMeta]);
 
+  // Create/revoke preview URL for image files to avoid memory leaks
+  useEffect(() => {
+    if (formData?.document instanceof File && formData.document.type?.startsWith('image/')) {
+      const url = URL.createObjectURL(formData.document);
+      setPreviewUrl(url);
+      return () => {
+        try {
+          URL.revokeObjectURL(url);
+        } catch {
+          // ignore
+        }
+        setPreviewUrl(null);
+      };
+    } else {
+      // no image file -> clear preview
+      if (previewUrl) {
+        try {
+          URL.revokeObjectURL(previewUrl);
+        } catch {
+          // ignore
+        }
+        setPreviewUrl(null);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData?.document]);
+
+  const isValidByExtension = (fileName) => {
+    const lower = (fileName || '').toLowerCase();
+    return (
+      lower.endsWith('.pdf') ||
+      lower.endsWith('.doc') ||
+      lower.endsWith('.docx') ||
+      lower.endsWith('.jpg') ||
+      lower.endsWith('.jpeg') ||
+      lower.endsWith('.png')
+    );
+  };
+
+  const isValidFileType = (file) => {
+    if (!file) return false;
+    const validTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'image/jpeg',
+      'image/png',
+    ];
+    // some browsers (or files) might not set file.type for older .doc files, so fallback to extension check
+    if (file.type && validTypes.includes(file.type)) return true;
+    return isValidByExtension(file.name);
+  };
+
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
     const newErrors = {};
@@ -76,15 +130,7 @@ const Step3 = ({ formData, setFormData, nextStep, prevStep }) => {
       return;
     }
 
-    const validTypes = [
-      'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'image/jpeg',
-      'image/png',
-    ];
-
-    if (!validTypes.includes(file.type)) {
+    if (!isValidFileType(file)) {
       newErrors.document = 'File harus berupa PDF, DOC/DOCX, atau Gambar (JPG/PNG)';
     } else if (file.size > maxFileSize) {
       newErrors.document = 'Ukuran file tidak boleh melebihi 10 MB';
@@ -108,9 +154,21 @@ const Step3 = ({ formData, setFormData, nextStep, prevStep }) => {
     }
 
     setErrors(newErrors);
+    // reset input value so same file can be re-selected if user chooses same file after removing
+    e.target.value = '';
   };
 
   const handleRemoveFile = () => {
+    // revoke preview if any
+    if (previewUrl) {
+      try {
+        URL.revokeObjectURL(previewUrl);
+      } catch {
+        // ignore
+      }
+      setPreviewUrl(null);
+    }
+
     setFormData({ ...formData, document: null, documentMeta: null });
     setUploadSuccess(false);
     setErrors({});
@@ -161,8 +219,8 @@ const Step3 = ({ formData, setFormData, nextStep, prevStep }) => {
                     <img src={checkIcon} alt="Centang" className="mb-2" style={{ width: 64, height: 64 }} />
                     <span className="text-blue-500 text-sm mb-2">File berhasil diupload!</span>
 
-                    {formData.document.type?.startsWith('image/') && (
-                      <img src={URL.createObjectURL(formData.document)} alt={formData.document.name} className="max-h-40 mb-2 rounded shadow" />
+                    {formData.document.type?.startsWith('image/') && previewUrl && (
+                      <img src={previewUrl} alt={formData.document.name} className="max-h-40 mb-2 rounded shadow" />
                     )}
 
                     <span className="text-gray-600 mb-3 break-all font-medium">{formData.document.name}</span>
@@ -207,7 +265,14 @@ const Step3 = ({ formData, setFormData, nextStep, prevStep }) => {
               </>
             )}
 
-            <input id="documentInput" type="file" className="hidden" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onChange={handleFileChange} disabled={isUploading} />
+            <input
+              id="documentInput"
+              type="file"
+              className="hidden"
+              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+              onChange={handleFileChange}
+              disabled={isUploading}
+            />
           </div>
 
           {errors.document && <p className="text-red-600 text-sm mt-1">{errors.document}</p>}

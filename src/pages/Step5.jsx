@@ -13,7 +13,6 @@ const Step5 = ({ submissionNumber: propSubmissionNumber }) => {
   const [copied, setCopied] = useState(false);
   const [submissionNumber, setSubmissionNumber] = useState(propSubmissionNumber || '');
 
-  // Persist submission number in sessionStorage so refresh doesn't lose it
   useEffect(() => {
     try {
       const stored = sessionStorage.getItem(STORAGE_KEY_SUBMISSION);
@@ -24,7 +23,6 @@ const Step5 = ({ submissionNumber: propSubmissionNumber }) => {
         setSubmissionNumber(stored);
       }
     } catch {
-      // ignore
     }
   }, [propSubmissionNumber]);
 
@@ -38,14 +36,12 @@ const Step5 = ({ submissionNumber: propSubmissionNumber }) => {
   };
 
   const handleBackToHome = () => {
-    // Hapus data sesi terkait form supaya saat kembali ke beranda formulir kembali ke awal
     try {
       sessionStorage.removeItem(STORAGE_KEY_FORMDATA);
       sessionStorage.removeItem(STORAGE_KEY_SELECTED);
       sessionStorage.removeItem(STORAGE_KEY_STEP1);
       sessionStorage.removeItem(STORAGE_KEY_SUBMISSION);
     } catch {
-      // ignore
     }
     navigate('/');
   };
@@ -53,11 +49,9 @@ const Step5 = ({ submissionNumber: propSubmissionNumber }) => {
   const copyToClipboard = async () => {
     const text = submissionNumber ?? '';
     if (!text) return;
-    // Modern clipboard API
     try {
       await navigator.clipboard.writeText(text);
     } catch (e) {
-      // Fallback for older browsers
       try {
         const el = document.createElement('textarea');
         el.value = text;
@@ -69,7 +63,6 @@ const Step5 = ({ submissionNumber: propSubmissionNumber }) => {
         document.execCommand('copy');
         document.body.removeChild(el);
       } catch (err) {
-        // if copy fails, just return silently
         return;
       }
     }
@@ -77,7 +70,6 @@ const Step5 = ({ submissionNumber: propSubmissionNumber }) => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // allow keyboard activation (Enter / Space) for accessibility
   const handleKeyDownCopy = (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
@@ -99,7 +91,7 @@ const Step5 = ({ submissionNumber: propSubmissionNumber }) => {
       <div className="p-4 bg-blue-50 border border-blue-200 rounded-md mb-6 w-full max-w-xs mx-auto">
         <p className="text-xs text-gray-500 font-semibold mb-1">Nomor Pengajuan</p>
 
-        {/* Nomor pengajuan: bisa diketuk untuk menyalin */}
+        {/* Nomor pengajuan */}
         <h3
           className="text-xl font-bold text-blue-600 truncate cursor-pointer select-all"
           role="button"
