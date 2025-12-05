@@ -80,6 +80,8 @@ function parseFlexibleTotal(res) {
     "totalRusak", "totalHilang",
     "count_damaged", "count_lost",
     "jumlah_rusak", "jumlah_hilang",
+    // tambahan untuk kemungkinan all-time field names
+    "total_all", "all_time_total", "all_time", "total_all_damaged", "total_all_lost",
   ];
   for (const k of keys) {
     const v = d?.[k];
@@ -87,7 +89,7 @@ function parseFlexibleTotal(res) {
     if (typeof v === "string" && !isNaN(Number(v))) return Number(v);
   }
 
-  const containers = ["counts", "stats", "data", "result"];
+  const containers = ["counts", "stats", "data", "result", "meta"];
   for (const c of containers) {
     const obj = d?.[c];
     if (obj && typeof obj === "object") {
@@ -164,12 +166,14 @@ export default function Dashboard() {
   };
 
   const refreshCounters = async () => {
-    const ttlOpt = { ttl: 0 }; 
+    // MINTA ALL-TIME dari API: gunakan parameter { all_time: true }.
+    // Jika backend menggunakan nama param lain, ganti sesuai API (contoh: { ttl: 0 }).
+    const allTimeOpt = { all_time: true };
     try {
       const [damagedRes, lostRes, activeRes] = await Promise.all([
-        getDamagedCards(ttlOpt),
-        getLostCards(ttlOpt),
-        getActiveCards(ttlOpt),
+        getDamagedCards(allTimeOpt),
+        getLostCards(allTimeOpt),
+        getActiveCards(),
       ]);
 
       const baseDamaged = parseFlexibleTotal(damagedRes);
@@ -185,6 +189,7 @@ export default function Dashboard() {
         hilang: baseLost + activeLost,
       }));
     } catch {
+      // silent fail — jangan ganggu UX
     }
   };
 
@@ -200,21 +205,23 @@ export default function Dashboard() {
     }
 
     try {
-      // ✅ PERBAIKAN 1: Ganti nama variabel jadi lebih jelas
+      // MINTA ALL-TIME untuk damaged/lost dengan opsi yang sama
+      const allTimeOpt = { all_time: true }; // ubah nama key kalau backend lain
+
       const [
         activeCardsRes,
         verificationsRes,
-        issuedTodayRes,      // ✅ KELUAR (issued = diserahkan)
-        returnedTodayRes,    // ✅ MASUK (returned = dikembalikan)
+        issuedTodayRes,      // KELUAR (issued = diserahkan)
+        returnedTodayRes,    // MASUK (returned = dikembalikan)
         damagedRes,
         lostRes,
       ] = await Promise.all([
-        getActiveCards(),       
-        getVerificationsAll(),  
-        getTodayIssued(),      // ✅ API untuk kartu KELUAR
-        getTodayReturned(),    // ✅ API untuk kartu MASUK
-        getDamagedCards({ ttl: 0 }),
-        getLostCards({ ttl: 0 }),
+        getActiveCards(),
+        getVerificationsAll(),
+        getTodayIssued(),
+        getTodayReturned(),
+        getDamagedCards(allTimeOpt),
+        getLostCards(allTimeOpt),
       ]);
 
       if (reqId !== lastRequestId.current) return;
@@ -239,24 +246,23 @@ export default function Dashboard() {
       const activeDamaged = activeArr.filter(isDamaged).length;
       const activeLost = activeArr.filter(isLost).length;
 
+      // combine base all-time + active
       const damagedTotal = Math.max(baseDamaged, baseDamaged + activeDamaged);
       const lostTotal = Math.max(baseLost, baseLost + activeLost);
 
-      // ✅ PERBAIKAN 2: Parse dengan benar
-      const keluarCount = parseFlexibleTotal(issuedTodayRes);    // ✅ issued = KELUAR
-      const masukCount = parseFlexibleTotal(returnedTodayRes);   // ✅ returned = MASUK
+      // Parse counts untuk hari ini
+      const keluarCount = parseFlexibleTotal(issuedTodayRes);    // issued = KELUAR
+      const masukCount = parseFlexibleTotal(returnedTodayRes);   // returned = MASUK
 
-      // ✅ PERBAIKAN 3: Set stats dengan mapping yang BENAR
       setStats({
         aktif: totalAktif,
         verifikasi: totalPending,
-        masukHariIni: masukCount,      // ✅ MASUK = returned
-        keluarHariIni: keluarCount,    // ✅ KELUAR = issued
+        masukHariIni: masukCount,
+        keluarHariIni: keluarCount,
         rusak: damagedTotal,
         hilang: lostTotal,
       });
 
-      // ✅ Log untuk debugging (hapus nanti kalau sudah OK)
       console.log("📊 Dashboard Stats Updated:", {
         aktif: totalAktif,
         verifikasi: totalPending,
@@ -361,14 +367,11 @@ export default function Dashboard() {
     return () => { try { if (ch) ch.close(); } catch {} };
   }, []);
 
-  // ✅ Event listener untuk increment manual dari KartuVisitor
+  // Event listener untuk increment manual dari KartuVisitor
   useEffect(() => {
     const onBump = (e) => {
       const { field, delta = 1 } = e.detail || {};
-      
-      // ✅ Log untuk debugging
       console.log("🚀 Dashboard menerima increment:", { field, delta });
-      
       if (!field) return;
       setStats((prev) => ({
         ...prev,

@@ -4,8 +4,18 @@ import { useNavigate } from 'react-router-dom';
 import CardType from '../components/CardType';
 import { getVisitTypes } from '../api';
 
+const STORAGE_KEY_SELECTED = 'visitForm_selectedCode';
+const STORAGE_KEY_STEP1 = 'visitForm_step1';
+
 const Step1 = ({ onNext }) => {
-  const [selectedCode, setSelectedCode] = useState('');
+  // load selectedCode from sessionStorage so data survives refresh (but not new browser session)
+  const [selectedCode, setSelectedCode] = useState(() => {
+    try {
+      return sessionStorage.getItem(STORAGE_KEY_SELECTED) || '';
+    } catch {
+      return '';
+    }
+  });
   const navigate = useNavigate();
   const [visitorTypes, setVisitorTypes] = useState([
     {
@@ -126,6 +136,14 @@ const Step1 = ({ onNext }) => {
       });
   }, []);
 
+  // persist selectedCode in sessionStorage so refresh keeps the choice
+  useEffect(() => {
+    try {
+      if (selectedCode) sessionStorage.setItem(STORAGE_KEY_SELECTED, selectedCode);
+      else sessionStorage.removeItem(STORAGE_KEY_SELECTED);
+    } catch {}
+  }, [selectedCode]);
+
   const handleSubmit = () => {
     if (!selectedCode) {
       alert('Pilih jenis kunjungan terlebih dahulu!');
@@ -136,6 +154,18 @@ const Step1 = ({ onNext }) => {
       alert('Tipe kunjungan tidak valid.');
       return;
     }
+    // store step1 summary in sessionStorage as well
+    try {
+      sessionStorage.setItem(
+        STORAGE_KEY_STEP1,
+        JSON.stringify({
+          jenisKunjungan: selected.id,
+          jenisKunjunganLabel: selected.label,
+          selectedCode,
+        })
+      );
+    } catch {}
+
     onNext({
       jenisKunjungan: selected.id,
       jenisKunjunganLabel: selected.label,

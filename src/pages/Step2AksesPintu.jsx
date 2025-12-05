@@ -3,6 +3,8 @@ import { fetchOptionLists } from '../api';
 import { FaUser } from 'react-icons/fa';
 import FormField from '../components/FormField';
 
+const STORAGE_KEY_FORMDATA = 'visitForm_formData';
+
 const Step2AksesPintu = ({ formData, setFormData, nextStep, prevStep }) => {
   const [errors, setErrors] = useState({});
 
@@ -34,6 +36,29 @@ const Step2AksesPintu = ({ formData, setFormData, nextStep, prevStep }) => {
         setOpts({ access_door: [], access_purpose: [], protokoler_count: [], need_protokoler_escort: [] });
       });
   }, []);
+
+  // load saved formData from sessionStorage on mount
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(STORAGE_KEY_FORMDATA);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (typeof setFormData === 'function') {
+          setFormData((prev) => ({ ...(prev || {}), ...(parsed || {}) }));
+        }
+      }
+    } catch {
+      // ignore
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // persist formData whenever it changes
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(STORAGE_KEY_FORMDATA, JSON.stringify(formData || {}));
+    } catch {}
+  }, [formData]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;

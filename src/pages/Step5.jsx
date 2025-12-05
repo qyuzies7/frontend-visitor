@@ -1,22 +1,52 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaCheckCircle } from 'react-icons/fa';
 
-const Step5 = ({ submissionNumber }) => {
+const STORAGE_KEY_FORMDATA = 'visitForm_formData';
+const STORAGE_KEY_SELECTED = 'visitForm_selectedCode';
+const STORAGE_KEY_STEP1 = 'visitForm_step1';
+const STORAGE_KEY_SUBMISSION = 'visitForm_submissionNumber';
+
+const Step5 = ({ submissionNumber: propSubmissionNumber }) => {
   const navigate = useNavigate();
 
   const [copied, setCopied] = useState(false);
+  const [submissionNumber, setSubmissionNumber] = useState(propSubmissionNumber || '');
+
+  // Persist submission number in sessionStorage so refresh doesn't lose it
+  useEffect(() => {
+    try {
+      const stored = sessionStorage.getItem(STORAGE_KEY_SUBMISSION);
+      if (propSubmissionNumber) {
+        sessionStorage.setItem(STORAGE_KEY_SUBMISSION, propSubmissionNumber);
+        setSubmissionNumber(propSubmissionNumber);
+      } else if (stored) {
+        setSubmissionNumber(stored);
+      }
+    } catch {
+      // ignore
+    }
+  }, [propSubmissionNumber]);
 
   const handleCheckStatus = () => {
-    navigate('/status', { 
-      state: { 
+    navigate('/status', {
+      state: {
         submissionNumber: submissionNumber,
-        fromSubmission: true 
-      } 
+        fromSubmission: true,
+      },
     });
   };
 
   const handleBackToHome = () => {
+    // Hapus data sesi terkait form supaya saat kembali ke beranda formulir kembali ke awal
+    try {
+      sessionStorage.removeItem(STORAGE_KEY_FORMDATA);
+      sessionStorage.removeItem(STORAGE_KEY_SELECTED);
+      sessionStorage.removeItem(STORAGE_KEY_STEP1);
+      sessionStorage.removeItem(STORAGE_KEY_SUBMISSION);
+    } catch {
+      // ignore
+    }
     navigate('/');
   };
 
@@ -60,7 +90,7 @@ const Step5 = ({ submissionNumber }) => {
       <div className="flex justify-center mb-6">
         <FaCheckCircle className="text-green-500 text-6xl" />
       </div>
-      
+
       <h2 className="text-2xl font-bold text-blue-800 mb-2">Pengajuan Berhasil Dikirim!</h2>
       <p className="text-gray-600 mb-6">
         Pengajuan kartu visitor Anda telah berhasil dikirim dan sedang dalam proses verifikasi oleh tim kami.
@@ -112,10 +142,6 @@ const Step5 = ({ submissionNumber }) => {
           <div className="flex items-center">
             <div className="w-2 h-2 bg-gray-300 rounded-full mr-2"></div>
             <span>Persetujuan/penolakan oleh petugas</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-2 h-2 bg-gray-300 rounded-full mr-2"></div>
-            <span>Notifikasi hasil ke Anda</span>
           </div>
         </div>
       </div>

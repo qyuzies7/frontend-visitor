@@ -3,6 +3,8 @@ import { getStations, fetchOptionLists } from '../api';
 import { FaUser } from 'react-icons/fa';
 import FormField from '../components/FormField';
 
+const STORAGE_KEY_FORMDATA = 'visitForm_formData';
+
 const Step2 = ({ formData, setFormData, nextStep, prevStep, visitType }) => {
   const [errors, setErrors] = useState({});
   const [stations, setStations] = useState([]);
@@ -83,6 +85,30 @@ const Step2 = ({ formData, setFormData, nextStep, prevStep, visitType }) => {
         setOpts({ assistance_service: [] });
       });
   }, []);
+
+  // load saved formData from sessionStorage on mount (so refresh restores values)
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(STORAGE_KEY_FORMDATA);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        // merge saved values into current formData
+        if (typeof setFormData === 'function') {
+          setFormData((prev) => ({ ...(prev || {}), ...(parsed || {}) }));
+        }
+      }
+    } catch {
+      // ignore parse errors
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // persist formData to sessionStorage whenever it changes
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(STORAGE_KEY_FORMDATA, JSON.stringify(formData || {}));
+    } catch {}
+  }, [formData]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
