@@ -37,7 +37,6 @@ const Step2AksesPintu = ({ formData, setFormData, nextStep, prevStep }) => {
       });
   }, []);
 
-  // load saved formData from sessionStorage on mount
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem(STORAGE_KEY_FORMDATA);
@@ -48,12 +47,9 @@ const Step2AksesPintu = ({ formData, setFormData, nextStep, prevStep }) => {
         }
       }
     } catch {
-      // ignore
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // persist formData whenever it changes
   useEffect(() => {
     try {
       sessionStorage.setItem(STORAGE_KEY_FORMDATA, JSON.stringify(formData || {}));
@@ -69,7 +65,7 @@ const Step2AksesPintu = ({ formData, setFormData, nextStep, prevStep }) => {
         ...formData,
         needProtokolerEscort: boolVal,
       };
-      // jika TIDAK butuh, kosongkan jumlah
+      // jika tidak butuh, bisa dikosongkan
       if (boolVal === false) {
         next.protokolerCount = '';
         setErrors((prev) => ({ ...prev, protokolerCount: '' }));

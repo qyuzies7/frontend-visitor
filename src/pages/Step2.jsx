@@ -86,24 +86,20 @@ const Step2 = ({ formData, setFormData, nextStep, prevStep, visitType }) => {
       });
   }, []);
 
-  // load saved formData from sessionStorage on mount (so refresh restores values)
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem(STORAGE_KEY_FORMDATA);
       if (raw) {
         const parsed = JSON.parse(raw);
-        // merge saved values into current formData
         if (typeof setFormData === 'function') {
           setFormData((prev) => ({ ...(prev || {}), ...(parsed || {}) }));
         }
       }
     } catch {
-      // ignore parse errors
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // persist formData to sessionStorage whenever it changes
+
   useEffect(() => {
     try {
       sessionStorage.setItem(STORAGE_KEY_FORMDATA, JSON.stringify(formData || {}));

@@ -143,6 +143,11 @@ const Step4 = ({ formData, prevStep, nextStep }) => {
         });
         response = await submitVisitorCard(fd);
       } else {
+        if (dataSource.documentMeta && dataSource.documentMeta.serverFileId) {
+          payload.document_id = dataSource.documentMeta.serverFileId;
+        } else if (payload.document) {
+          payload.document_name = payload.document?.name ?? payload.document;
+        }
         if (typeof payload.need_protokoler_escort !== 'undefined') {
           payload.need_protokoler_escort = payload.need_protokoler_escort ? 1 : 0;
         }
@@ -305,7 +310,7 @@ const Step4 = ({ formData, prevStep, nextStep }) => {
         <button type="button" onClick={prevStep} className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition-colors">
           Kembali
         </button>
-        <button onClick={handleSubmit} className={`px-6 py-2 rounded-md text-white transition-colors ${agreed ? 'bg-customBlue hover:bg-customBlue-hover' : 'bg-gray-400 cursor-not-allowed'}`} disabled={!agreed || loading}>
+        <button onClick={handleSubmit} className={`px-6 py-2 rounded-md text-white transition-colors ${agreed ? 'bg-customBlue hover:bg-customBlue-hover' : 'bg-gray-400 cursor-not-allowed'}`} disabled={!agreed}>
           {loading ? 'Mengirim...' : 'Kirim'}
         </button>
         {error && <span className="text-red-500 ml-4">{error}</span>}

@@ -180,11 +180,11 @@ export const getDamagedCards = (opts = {}) => {
   if (typeof cachedGet === "function") {
     return cachedGet(`/admin/dashboard/damaged-cards`, {
       ttl,
-      params: { _ts: Date.now() },
+      params: { _ts: Date.now(), all_time: true },
       cfg: { headers: { "Cache-Control": "no-cache" } },
     });
   }
-  const url = `/admin/dashboard/damaged-cards?_ts=${Date.now()}`;
+  const url = `/admin/dashboard/damaged-cards?_ts=${Date.now()}&all_time=true`;
   return http.get(url, { headers: { "Cache-Control": "no-cache" } }).then((r) => r);
 };
 export const getLostCards = (opts = {}) => {
@@ -192,11 +192,11 @@ export const getLostCards = (opts = {}) => {
   if (typeof cachedGet === "function") {
     return cachedGet(`/admin/dashboard/lost-cards`, {
       ttl,
-      params: { _ts: Date.now() },
+      params: { _ts: Date.now(), all_time: true },
       cfg: { headers: { "Cache-Control": "no-cache" } },
     });
   }
-  const url = `/admin/dashboard/lost-cards?_ts=${Date.now()}`;
+  const url = `/admin/dashboard/lost-cards?_ts=${Date.now()}&all_time=true`;
   return http.get(url, { headers: { "Cache-Control": "no-cache" } }).then((r) => r);
 };
 

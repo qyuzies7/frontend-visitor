@@ -8,7 +8,6 @@ const STORAGE_KEY_SELECTED = 'visitForm_selectedCode';
 const STORAGE_KEY_STEP1 = 'visitForm_step1';
 
 const Step1 = ({ onNext }) => {
-  // load selectedCode from sessionStorage so data survives refresh (but not new browser session)
   const [selectedCode, setSelectedCode] = useState(() => {
     try {
       return sessionStorage.getItem(STORAGE_KEY_SELECTED) || '';
@@ -136,7 +135,6 @@ const Step1 = ({ onNext }) => {
       });
   }, []);
 
-  // persist selectedCode in sessionStorage so refresh keeps the choice
   useEffect(() => {
     try {
       if (selectedCode) sessionStorage.setItem(STORAGE_KEY_SELECTED, selectedCode);
@@ -154,7 +152,7 @@ const Step1 = ({ onNext }) => {
       alert('Tipe kunjungan tidak valid.');
       return;
     }
-    // store step1 summary in sessionStorage as well
+
     try {
       sessionStorage.setItem(
         STORAGE_KEY_STEP1,

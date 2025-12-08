@@ -3,6 +3,7 @@ import { FaFileAlt, FaUpload } from 'react-icons/fa';
 import checkIcon from '../assets/check1.svg';
 
 const STORAGE_KEY_FORMDATA = 'visitForm_formData';
+const UPLOAD_TEMP_URL = '/api/upload-temp'; 
 
 const Step3 = ({ formData, setFormData, nextStep, prevStep }) => {
   const [errors, setErrors] = useState({});
@@ -10,16 +11,14 @@ const Step3 = ({ formData, setFormData, nextStep, prevStep }) => {
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
 
-  const maxFileSize = 10 * 1024 * 1024; // 10MB
+  const maxFileSize = 10 * 1024 * 1024; 
 
-  // Load saved formData from sessionStorage on mount (merge into parent state)
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem(STORAGE_KEY_FORMDATA);
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed) {
-          // if parsed.document is metadata, move to documentMeta and ensure document is null
           if (parsed.document && parsed.document.__isFileMeta) {
             parsed.documentMeta = parsed.document;
             parsed.document = null;
@@ -30,16 +29,12 @@ const Step3 = ({ formData, setFormData, nextStep, prevStep }) => {
         }
       }
     } catch {
-      // ignore parse errors
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Persist formData to sessionStorage whenever it changes
   useEffect(() => {
     try {
       const toSave = { ...(formData || {}) };
-      // Replace File with metadata so JSON.stringify works
       if (toSave.document instanceof File) {
         toSave.document = {
           __isFileMeta: true,
@@ -48,15 +43,12 @@ const Step3 = ({ formData, setFormData, nextStep, prevStep }) => {
           size: toSave.document.size,
         };
       }
-      // keep documentMeta if present
       sessionStorage.setItem(STORAGE_KEY_FORMDATA, JSON.stringify(toSave));
     } catch {
-      // ignore storage errors
     }
   }, [formData]);
 
   useEffect(() => {
-    // If parent formData contains a File -> success; if it contains documentMeta -> also treat as uploaded
     if (formData?.document instanceof File) {
       setUploadSuccess(true);
     } else if (formData?.documentMeta && formData.documentMeta.__isFileMeta) {
@@ -66,7 +58,6 @@ const Step3 = ({ formData, setFormData, nextStep, prevStep }) => {
     }
   }, [formData?.document, formData?.documentMeta]);
 
-  // Create/revoke preview URL for image files to avoid memory leaks
   useEffect(() => {
     if (formData?.document instanceof File && formData.document.type?.startsWith('image/')) {
       const url = URL.createObjectURL(formData.document);
@@ -75,22 +66,18 @@ const Step3 = ({ formData, setFormData, nextStep, prevStep }) => {
         try {
           URL.revokeObjectURL(url);
         } catch {
-          // ignore
         }
         setPreviewUrl(null);
       };
     } else {
-      // no image file -> clear preview
       if (previewUrl) {
         try {
           URL.revokeObjectURL(previewUrl);
         } catch {
-          // ignore
         }
         setPreviewUrl(null);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData?.document]);
 
   const isValidByExtension = (fileName) => {
@@ -114,12 +101,24 @@ const Step3 = ({ formData, setFormData, nextStep, prevStep }) => {
       'image/jpeg',
       'image/png',
     ];
-    // some browsers (or files) might not set file.type for older .doc files, so fallback to extension check
     if (file.type && validTypes.includes(file.type)) return true;
     return isValidByExtension(file.name);
   };
 
-  const handleFileChange = (e) => {
+  const uploadFileToServer = async (file) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    const res = await fetch(UPLOAD_TEMP_URL, {
+      method: 'POST',
+      body: fd,
+    });
+    if (!res.ok) {
+      throw new Error('Upload gagal');
+    }
+    return res.json(); 
+  };
+
+  const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
     const newErrors = {};
     setUploadSuccess(false);
@@ -132,39 +131,66 @@ const Step3 = ({ formData, setFormData, nextStep, prevStep }) => {
 
     if (!isValidFileType(file)) {
       newErrors.document = 'File harus berupa PDF, DOC/DOCX, atau Gambar (JPG/PNG)';
-    } else if (file.size > maxFileSize) {
-      newErrors.document = 'Ukuran file tidak boleh melebihi 10 MB';
-    } else {
-      setIsUploading(true);
-      setTimeout(() => {
-        // Save File in parent state and also store lightweight metadata
-        setFormData({
-          ...formData,
-          document: file,
-          documentMeta: {
-            __isFileMeta: true,
-            name: file.name,
-            type: file.type,
-            size: file.size,
-          },
-        });
-        setIsUploading(false);
-        setUploadSuccess(true);
-      }, 800);
+      setErrors(newErrors);
+      e.target.value = '';
+      return;
     }
 
-    setErrors(newErrors);
-    // reset input value so same file can be re-selected if user chooses same file after removing
-    e.target.value = '';
+    if (file.size > maxFileSize) {
+      newErrors.document = 'Ukuran file tidak boleh melebihi 10 MB';
+      setErrors(newErrors);
+      e.target.value = '';
+      return;
+    }
+
+    setIsUploading(true);
+    setErrors({});
+
+    try {
+      const result = await uploadFileToServer(file).catch(() => null);
+
+      const meta = {
+        __isFileMeta: true,
+        name: file.name,
+        type: file.type,
+        size: file.size,
+      };
+
+      if (result) {
+        meta.serverFileId = result.fileId ?? result.id ?? result.file_id ?? null;
+        meta.url = result.url ?? result.fileUrl ?? result.file_url ?? null;
+      }
+
+      setFormData({
+        ...formData,
+        document: file,
+        documentMeta: meta,
+      });
+
+      setUploadSuccess(true);
+    } catch (err) {
+      setErrors({ document: 'Gagal upload file ke server. File disimpan sementara di sesi, silakan ulangi jika perlu.' });
+      setFormData({
+        ...formData,
+        document: file,
+        documentMeta: {
+          __isFileMeta: true,
+          name: file.name,
+          type: file.type,
+          size: file.size,
+        },
+      });
+    } finally {
+      setIsUploading(false);
+      e.target.value = '';
+    }
   };
 
   const handleRemoveFile = () => {
-    // revoke preview if any
     if (previewUrl) {
       try {
         URL.revokeObjectURL(previewUrl);
       } catch {
-        // ignore
       }
       setPreviewUrl(null);
     }

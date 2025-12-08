@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { checkStatus } from '../api';
 import { useNavigate, useLocation } from "react-router-dom";
 import logo from "../assets/KAI-logo.png";
-//import train from "../assets/Train.png";
 import { FaSearch } from "react-icons/fa";
 
 export default function VisitorCardStatus() {
@@ -29,10 +28,9 @@ export default function VisitorCardStatus() {
     setError("");
     
     try {
-      //  API untuk cek status
+      //  API cek status
       const res = await checkStatus({ reference_number: nomor });
 
-      // Ambil data dari response
       const dataRoot = res?.data?.data ?? res?.data ?? {};
       const status = (dataRoot?.status || "").toLowerCase(); 
 
@@ -129,11 +127,6 @@ export default function VisitorCardStatus() {
         </div>
       </div>
 
-      {/* <img
-        src={train}
-        alt="Kereta"
-        className="fixed bottom-[-90px] left-[35%] w-[clamp(600px,70vw,1200px)] h-auto opacity-30 z-[5] pointer-events-none md:bottom-[-90px] md:left-[35%] sm:w-[clamp(500px,95vw,800px)] sm:bottom-[5px] sm:opacity-25 sm:left-[15%]"
-      /> */}
     </div>
   );
 }

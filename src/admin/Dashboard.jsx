@@ -80,7 +80,6 @@ function parseFlexibleTotal(res) {
     "totalRusak", "totalHilang",
     "count_damaged", "count_lost",
     "jumlah_rusak", "jumlah_hilang",
-    // tambahan untuk kemungkinan all-time field names
     "total_all", "all_time_total", "all_time", "total_all_damaged", "total_all_lost",
   ];
   for (const k of keys) {
@@ -166,8 +165,6 @@ export default function Dashboard() {
   };
 
   const refreshCounters = async () => {
-    // MINTA ALL-TIME dari API: gunakan parameter { all_time: true }.
-    // Jika backend menggunakan nama param lain, ganti sesuai API (contoh: { ttl: 0 }).
     const allTimeOpt = { all_time: true };
     try {
       const [damagedRes, lostRes, activeRes] = await Promise.all([
@@ -189,11 +186,9 @@ export default function Dashboard() {
         hilang: baseLost + activeLost,
       }));
     } catch {
-      // silent fail — jangan ganggu UX
     }
   };
 
-  // ✅ FUNGSI INI YANG DIPERBAIKI!
   const loadStats = async ({ initial = false } = {}) => {
     const reqId = ++lastRequestId.current;
 
@@ -205,14 +200,13 @@ export default function Dashboard() {
     }
 
     try {
-      // MINTA ALL-TIME untuk damaged/lost dengan opsi yang sama
       const allTimeOpt = { all_time: true }; // ubah nama key kalau backend lain
 
       const [
         activeCardsRes,
         verificationsRes,
-        issuedTodayRes,      // KELUAR (issued = diserahkan)
-        returnedTodayRes,    // MASUK (returned = dikembalikan)
+        issuedTodayRes,      
+        returnedTodayRes,    
         damagedRes,
         lostRes,
       ] = await Promise.all([
@@ -250,9 +244,8 @@ export default function Dashboard() {
       const damagedTotal = Math.max(baseDamaged, baseDamaged + activeDamaged);
       const lostTotal = Math.max(baseLost, baseLost + activeLost);
 
-      // Parse counts untuk hari ini
-      const keluarCount = parseFlexibleTotal(issuedTodayRes);    // issued = KELUAR
-      const masukCount = parseFlexibleTotal(returnedTodayRes);   // returned = MASUK
+      const keluarCount = parseFlexibleTotal(issuedTodayRes);    
+      const masukCount = parseFlexibleTotal(returnedTodayRes);   
 
       setStats({
         aktif: totalAktif,
@@ -263,7 +256,7 @@ export default function Dashboard() {
         hilang: lostTotal,
       });
 
-      console.log("📊 Dashboard Stats Updated:", {
+      console.log(" Dashboard Stats Updated:", {
         aktif: totalAktif,
         verifikasi: totalPending,
         masukHariIni: masukCount,
@@ -275,7 +268,7 @@ export default function Dashboard() {
       setErr("");
     } catch (e) {
       const msg = e?.response?.data?.message || e?.message || "Gagal memuat dashboard";
-      console.error("❌ Error loading dashboard:", e);
+      console.error(" Error loading dashboard:", e);
       setErr(msg);
     } finally {
       if (reqId === lastRequestId.current) {
@@ -367,11 +360,10 @@ export default function Dashboard() {
     return () => { try { if (ch) ch.close(); } catch {} };
   }, []);
 
-  // Event listener untuk increment manual dari KartuVisitor
   useEffect(() => {
     const onBump = (e) => {
       const { field, delta = 1 } = e.detail || {};
-      console.log("🚀 Dashboard menerima increment:", { field, delta });
+      console.log(" Dashboard menerima increment:", { field, delta });
       if (!field) return;
       setStats((prev) => ({
         ...prev,

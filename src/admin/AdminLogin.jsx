@@ -129,7 +129,6 @@ export default function AdminLogin() {
         </div>
       </div>
 
-      {/* Custom CSS */}
       <style jsx>{`
         .bg-gradient-custom {
           background: linear-gradient(90deg, rgba(106,139,176,0.85) 0%, rgba(94,91,173,0.80) 100%);
