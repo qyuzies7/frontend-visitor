@@ -1,21 +1,15 @@
-// src/admin/index.js
 import React, { Component } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { loadTokenFromStorage } from "../api";
 
-// Pastikan mengarah ke komponen TERBARU (all-status)
 export { default as AdminLogin } from "./AdminLogin";
 export { default as Dashboard } from "./Dashboard";
 export { default as VerifikasiPersetujuan } from "./VerifikasiPersetujuan";
 export { default as KartuVisitor } from "./KartuVisitor";
 export { default as RiwayatPengembalian } from "./RiwayatPengembalian";
 
-// Set Authorization header dari localStorage saat bootstrap
 loadTokenFromStorage();
 
-/* =====================================================
- * Error Boundary tanpa JSX
- * ===================================================== */
 export class ErrorBoundary extends Component {
   constructor(props) {
     super(props);
@@ -29,8 +23,7 @@ export class ErrorBoundary extends Component {
 
   componentDidCatch(error, info) {
     this.setState({ info });
-    // (opsional) kirim ke logging/monitoring
-    // console.error("Page error:", error, info);
+
   }
 
   handleRetry() {
@@ -96,10 +89,6 @@ export class ErrorBoundary extends Component {
   }
 }
 
-/* =====================================================
- * HOC untuk membungkus halaman dengan ErrorBoundary (tanpa JSX)
- * Remount per route dengan key: location.key
- * ===================================================== */
 export function withBoundary(ComponentToWrap) {
   return function WrappedWithBoundary(props) {
     const location = useLocation();
@@ -111,9 +100,6 @@ export function withBoundary(ComponentToWrap) {
   };
 }
 
-/* =====================================================
- * ProtectedRoute — tanpa side-effect saat render (tanpa JSX)
- * ===================================================== */
 export function ProtectedRoute({ children }) {
   const token = localStorage.getItem("token");
   if (!token) {

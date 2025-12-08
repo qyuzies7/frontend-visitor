@@ -200,7 +200,7 @@ export default function Dashboard() {
     }
 
     try {
-      const allTimeOpt = { all_time: true }; // ubah nama key kalau backend lain
+      const allTimeOpt = { all_time: true }; 
 
       const [
         activeCardsRes,
@@ -240,7 +240,6 @@ export default function Dashboard() {
       const activeDamaged = activeArr.filter(isDamaged).length;
       const activeLost = activeArr.filter(isLost).length;
 
-      // combine base all-time + active
       const damagedTotal = Math.max(baseDamaged, baseDamaged + activeDamaged);
       const lostTotal = Math.max(baseLost, baseLost + activeLost);
 

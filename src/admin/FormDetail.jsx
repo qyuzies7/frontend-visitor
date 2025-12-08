@@ -450,11 +450,9 @@ export default function FormDetail() {
     }
   };
 
-  // ✅ BAGIAN INI YANG DIPERBAIKI - Tombol aksi bawah
   let actionSection;
   
   if (detail.statusLabel === "Menunggu") {
-    // ✅ Status "Menunggu" → 3 tombol: Kembali, Tolak, Setuju
     actionSection = (
       <div className="flex gap-4 justify-end">
         <button
@@ -482,10 +480,8 @@ export default function FormDetail() {
     );
   } 
   else if (detail.statusLabel === "Ditolak") {
-    // ✅ Status "Ditolak" → Catatan + Petugas + Kembali (SEBARIS!)
     actionSection = (
       <div className="flex gap-4 items-center justify-between">
-        {/* Bagian kiri: Catatan + Petugas */}
         <div className="flex gap-4 items-center">
           <div
             className="font-poppins font-semibold px-5 py-2 rounded-[8px]"
@@ -509,7 +505,6 @@ export default function FormDetail() {
           </div>
         </div>
         
-        {/* Bagian kanan: Tombol Kembali */}
         <button
           className="px-8 py-2 text-white font-poppins font-semibold rounded-[7px]"
           style={{ background: "linear-gradient(90deg, #6A8BB0 0%, #5E5BAD 100%)", fontWeight: 600, fontSize: 16 }}
@@ -521,10 +516,8 @@ export default function FormDetail() {
     );
   } 
   else if (detail.statusLabel === "Disetujui") {
-    // ✅ Status "Disetujui" → Catatan + Petugas + Kembali (SEBARIS!)
     actionSection = (
       <div className="flex gap-4 items-center justify-between">
-        {/* Bagian kiri: Catatan + Petugas */}
         <div className="flex gap-4 items-center">
           <div
             className="font-poppins font-medium px-5 py-2 rounded-[8px]"
@@ -540,7 +533,6 @@ export default function FormDetail() {
           </div>
         </div>
         
-        {/* Bagian kanan: Tombol Kembali */}
         <button
           className="px-8 py-2 text-white font-poppins font-semibold rounded-[7px]"
           style={{ background: "linear-gradient(90deg, #6A8BB0 0%, #5E5BAD 100%)", fontWeight: 600, fontSize: 16 }}
@@ -552,7 +544,6 @@ export default function FormDetail() {
     );
   }
   else {
-    // ✅ Status lain (misal "Dibatalkan") → Cuma tombol Kembali di kanan bawah
     actionSection = (
       <div className="flex justify-end">
         <button
